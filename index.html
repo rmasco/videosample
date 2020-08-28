@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Document</title>
+  <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css" integrity="sha384-JcKb8q3iqJ61gNV9KGb8thSsNjpSL0n8PARn9HuZOnIxN0hoP+VmmDGMN5t9UJ0Z" crossorigin="anonymous">
+</head>
+<body>
+  <div class="container">
+    <h1 class="heading">ビデオ通話 + チャットサンプル</h1>
+    <div class="row">
+      <div class="form-group">
+        <input type="text" placeholder="Remote Peer ID" id="js-remote-id">
+        <button id="js-call-trigger" class="btn btn-primary">Call</button>
+        <button id="js-close-trigger" class="btn btn-secondary">Close</button>
+      </div>
+    </div>
+    <div class="row">
+      <div class="col-8">
+        <div class="row">
+          <div class="col">
+            <video id="js-local-stream"></video>
+          </div>
+          <div class="col">
+            <video id="js-remote-stream"></video>
+          </div>
+        </div>
+      </div>
+      <div class="col border">
+        <div class="row">
+          <pre class="messages" id="js-messages"></pre>
+        </div>
+        <div class="row">
+          <div class=" form-group">
+            <input type="text" id="js-local-text" class="form-control">
+          </div>
+          <div class=" form-group">
+            <button id="js-send-trigger" class="btn btn-primary">送信</button>
+          </div>
+        </div>
+      </div>
+    </div>
+    <p class="meta" id="js-meta"></p>
+    <p>Your ID: <span id="js-local-id"></span></p>
+  </div>
+
+  <script type="text/javascript" src="https://cdn.webrtc.ecl.ntt.com/skyway-latest.js"></script>
+  <script src="index.js"></script>
+  <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js" integrity="sha384-DfXdz2htPH0lsSSs5nCTpuj/zy4C+OGpamoFVy38MVBnE+IbbVYUew+OrCXaRkfj" crossorigin="anonymous"></script>
+  <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js" integrity="sha384-B4gt1jrGC7Jh4AgTPSdUtOBvfO8shuf57BaghqFfPlYxofvL8/KUEfYiJOMMV+rV" crossorigin="anonymous"></script>
+
+</body>
+</html>
