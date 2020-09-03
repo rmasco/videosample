@@ -1,5 +1,11 @@
 const Peer = window.Peer;
 
+// const limit_date = new Date('2020/09/03 23:26:00');
+// テストのため終了時刻を現在時刻から1分に設定
+const limit_date = new Date();
+limit_date.setSeconds(new Date().getSeconds() + 60);
+const limit = limit_date.getTime();
+
 (async function main() {
   const localVideo = document.getElementById('js-local-stream');
   const localId = document.getElementById('js-local-id');
@@ -13,10 +19,35 @@ const Peer = window.Peer;
   const localText = document.getElementById('js-local-text');
   const sendTrigger = document.getElementById('js-send-trigger');
   const messages = document.getElementById('js-messages');
+  const lasttime = document.getElementById('lasttime');
 
   const index = Math.ceil( Math.random()*1000 );
   const peerID = 'test-' + index;
 
+  let timer;
+  const update_limit_time = function(){
+    const now_date = new Date();
+    console.log(now_date);
+    const now_timestamp = now_date.getTime();
+    console.log(limit);
+    console.log(now_timestamp);
+    console.log(limit - now_timestamp);
+    console.log((limit - now_timestamp) / (1000));
+    var diff_time = Math.floor((limit - now_timestamp) / (1000));
+    console.log(diff_time);
+    console.log('残り時間: ' + diff_time + '秒');
+    if(diff_time > 0){
+      lasttime.textContent = '残り時間: ' + diff_time + '秒';
+      setTimeout(function(){
+        timer = update_limit_time();
+      }, 1000);
+    } else {
+      // 時間切れ
+      lasttime.textContent = 'トーク終了しました';
+      // 切断
+      closeTrigger.click();
+    }
+  }
   const onClickSend = function(dataConnection) {
     const data = {
       name: peerID,
@@ -48,7 +79,7 @@ const Peer = window.Peer;
 
 
   const peer = (window.peer = new Peer(peerID, {
-    key: 'APIキー',
+    key: '976b1d6d-589e-48f6-8a9c-8f67e8062a7c',
     debug: 3,
   }));
 
@@ -67,11 +98,16 @@ const Peer = window.Peer;
       remoteVideo.srcObject = stream;
       remoteVideo.playsInline = true;
       await remoteVideo.play().catch(console.error);
+      timer = setTimeout(function(){
+        update_limit_time();
+      }, 1000);
+
     });
 
     mediaConnection.once('close', () => {
       remoteVideo.srcObject.getTracks().forEach(track => track.stop());
       remoteVideo.srcObject = null;
+      clearTimeout(timer);
     });
 
     const dataConnection = peer.connect(remoteId.value);
@@ -102,7 +138,11 @@ const Peer = window.Peer;
 
   // Register callee handler
   peer.on('call', mediaConnection => {
-    mediaConnection.answer(localStream);
+    if(window.confirm("応答しますか？")){
+      mediaConnection.answer(localStream);
+    } else {
+      mediaConnection.close(true)
+    }
 
     mediaConnection.on('stream', async stream => {
       // Render remote stream for callee
@@ -114,6 +154,7 @@ const Peer = window.Peer;
     mediaConnection.once('close', () => {
       remoteVideo.srcObject.getTracks().forEach(track => track.stop());
       remoteVideo.srcObject = null;
+      clearTimeout(timer);
     });
 
     closeTrigger.addEventListener('click', () => mediaConnection.close(true));
