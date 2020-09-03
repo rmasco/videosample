@@ -2,9 +2,9 @@ const Peer = window.Peer;
 
 // const limit_date = new Date('2020/09/03 23:26:00');
 // テストのため終了時刻を現在時刻から1分に設定
-const limit_date = new Date();
+let limit_date = new Date();
 limit_date.setSeconds(new Date().getSeconds() + 60);
-const limit = limit_date.getTime();
+let limit_time = limit_date.getTime();
 
 (async function main() {
   const localVideo = document.getElementById('js-local-stream');
@@ -24,16 +24,40 @@ const limit = limit_date.getTime();
   const index = Math.ceil( Math.random()*1000 );
   const peerID = 'test-' + index;
 
+  const get_last_connect = function(){
+    const talk_json = localStorage.getItem('talk');
+    if(!talk_json) return
+
+    const talk_obj = JSON.parse(talk_json);
+    if(Math.floor((new Date(talk_obj.limit_date).getTime() - new Date().getTime()) / (1000)) > 0){
+      // 接続時間内の場合は再接続するかどうか
+      if(window.confirm("再接続しますか？ ID: " + talk_obj.remoteId )){
+        // limitを再接続前のものに変更
+        limit_date = new Date(talk_obj.limit_date);
+        limit_time = limit_date.getTime();
+        remoteId.value = talk_obj.remoteId;
+        lasttime.textContent = '再接続待ち...';
+        // peerがopenしたら再接続
+        peer.once('open', () => {
+          callTrigger.click()
+        });
+      }
+    } else {
+      // 接続時間切れの場合クリア
+      localStorage.removeItem('talk');
+    }
+  }
+
   let timer;
   const update_limit_time = function(){
     const now_date = new Date();
     console.log(now_date);
     const now_timestamp = now_date.getTime();
-    console.log(limit);
+    console.log(limit_time);
     console.log(now_timestamp);
-    console.log(limit - now_timestamp);
-    console.log((limit - now_timestamp) / (1000));
-    var diff_time = Math.floor((limit - now_timestamp) / (1000));
+    console.log(limit_time - now_timestamp);
+    console.log((limit_time - now_timestamp) / (1000));
+    const diff_time = Math.floor((limit_time - now_timestamp) / (1000));
     console.log(diff_time);
     console.log('残り時間: ' + diff_time + '秒');
     if(diff_time > 0){
@@ -101,7 +125,12 @@ const limit = limit_date.getTime();
       timer = setTimeout(function(){
         update_limit_time();
       }, 1000);
-
+      
+      let json = JSON.stringify({
+        'remoteId': remoteId.value,
+        'limit_date': limit_date
+      });
+      localStorage.setItem('talk', json);
     });
 
     mediaConnection.once('close', () => {
@@ -189,6 +218,7 @@ const limit = limit_date.getTime();
 
   peer.on('error', console.error);  
 
-
+  // 再接続処理
+  get_last_connect();
 
 })();
