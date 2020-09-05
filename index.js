@@ -7,28 +7,39 @@ limit_date.setSeconds(new Date().getSeconds() + 60);
 let limit_time = limit_date.getTime();
 
 (async function main() {
+  // ビデオチャット機能
   const localVideo = document.getElementById('js-local-stream');
   const localId = document.getElementById('js-local-id');
   const callTrigger = document.getElementById('js-call-trigger');
   const closeTrigger = document.getElementById('js-close-trigger');
+  const videoMuteTrigger = document.getElementById('js-video-mute-trigger');
+  const audioMuteTrigger = document.getElementById('js-audio-mute-trigger');
   const remoteVideo = document.getElementById('js-remote-stream');
   const remoteId = document.getElementById('js-remote-id');
   const meta = document.getElementById('js-meta');
   const sdkSrc = document.querySelector('script[src*=skyway]');
 
+  // メッセージ機能
   const localText = document.getElementById('js-local-text');
   const sendTrigger = document.getElementById('js-send-trigger');
   const messages = document.getElementById('js-messages');
   const lasttime = document.getElementById('lasttime');
 
+  // ID
   const index = Math.ceil( Math.random()*1000 );
   const peerID = 'test-' + index;
 
+  // 再接続処理
   const get_last_connect = function(){
+    // ローカルストレージから一時データ取得
+    // 形式: limit_date
+    //      remoteId
     const talk_json = localStorage.getItem('talk');
+    // 一時データがなければ終了
     if(!talk_json) return
-
+    // 一時データをパース
     const talk_obj = JSON.parse(talk_json);
+    // 制限時刻を過ぎているかチェック
     if(Math.floor((new Date(talk_obj.limit_date).getTime() - new Date().getTime()) / (1000)) > 0){
       // 接続時間内の場合は再接続するかどうか
       if(window.confirm("再接続しますか？ ID: " + talk_obj.remoteId )){
@@ -48,6 +59,7 @@ let limit_time = limit_date.getTime();
     }
   }
 
+  // 制限時間を更新して、時間切れであれば終了する
   let timer;
   const update_limit_time = function(){
     const now_date = new Date();
@@ -72,6 +84,8 @@ let limit_time = limit_date.getTime();
       closeTrigger.click();
     }
   }
+
+  // メッセージ送信処理
   const onClickSend = function(dataConnection) {
     const data = {
       name: peerID,
@@ -114,9 +128,7 @@ let limit_time = limit_date.getTime();
     if (!peer.open) {
       return;
     }
-
     const mediaConnection = peer.call(remoteId.value, localStream);
-
     mediaConnection.on('stream', async stream => {
       // Render remote stream for caller
       remoteVideo.srcObject = stream;
@@ -163,8 +175,43 @@ let limit_time = limit_date.getTime();
     });
   });
 
-  peer.once('open', id => (localId.textContent = id));
+  isVideoMute = false
+  videoMuteTrigger.addEventListener('click', () => {
+    try {
+      isVideoMute = !isVideoMute
+      var videoTrack = localStream.getVideoTracks()[0];
+      if(isVideoMute){
+        videoTrack.enabled = false
+        // Todo ボタン表示の切り替え
+      }else {
+        videoTrack.enabled = true
+        // Todo ボタン表示の切り替え
+      }
+    } catch (error) {
+      // Todo メッセージ外だし
+      window.confirm("予期せぬエラーが発生しました。")
+    }
+    
+  });
+  isAudioMute = false
+  audioMuteTrigger.addEventListener('click', () => {
+    try {
+      isAudioMute = ! isAudioMute
+      var audioTrack = localStream.getAudioTracks()[0];
+      if(isAudioMute){
+        audioTrack.enabled = false
+        // Todo ボタン表示の切り替え
+      }else {
+        audioTrack.enabled = true
+        // Todo ボタン表示の切り替え
+      }
+    } catch (error) {
+      // Todo メッセージ外だし
+      window.confirm("予期せぬエラーが発生しました。")
+    }
+  });
 
+  peer.once('open', id => (localId.textContent = id));
   // Register callee handler
   peer.on('call', mediaConnection => {
     if(window.confirm("応答しますか？")){
