@@ -20,6 +20,7 @@ let limit_time = limit_date.getTime();
   const sdkSrc = document.querySelector('script[src*=skyway]');
 
   // メッセージ機能
+  const fileSendTrigger = document.getElementById('js-file-send-trigger');
   const localText = document.getElementById('js-local-text');
   const sendTrigger = document.getElementById('js-send-trigger');
   const messages = document.getElementById('js-messages');
@@ -96,6 +97,20 @@ let limit_time = limit_date.getTime();
     messages.textContent += `You: ${data.msg}\n`;
     localText.value = '';
   };
+  // ファイル送信処理
+  localFile = null
+  const onClickFileSend = function(dataConnection) {
+    var reader = new FileReader()
+    reader.onload = () => {
+      const data = {
+        name: peerID,
+        file_name: localFile.name,
+        file: reader.result
+      };
+      dataConnection.send(data);
+    };
+    reader.readAsDataURL(localFile)
+  };
 
   meta.innerText = `
     UA: ${navigator.userAgent}
@@ -160,8 +175,13 @@ let limit_time = limit_date.getTime();
       });
     });
 
-    dataConnection.on('data', ({ name, msg }) => {
-      messages.textContent += `${name}: ${msg}\n`;
+    dataConnection.on('data', ({ name, msg, file_name, file}) => {
+      if (msg) {
+        messages.textContent += `${name}: ${msg}\n`;        
+      }else{
+        //messages.textContent += file  
+        fileRecieved(file_name, file)
+      }
     });
 
     dataConnection.once('close', () => {
@@ -173,8 +193,15 @@ let limit_time = limit_date.getTime();
       mediaConnection.close(true)
       dataConnection.close()
     });
+
+    fileSendTrigger.addEventListener("change", function(e) {
+      console.log(e.target.files)
+      localFile = e.target.files[0]
+      onClickFileSend(dataConnection)
+     },false);
   });
 
+  // ビデオ Mute機能
   isVideoMute = false
   videoMuteTrigger.addEventListener('click', () => {
     try {
@@ -191,8 +218,8 @@ let limit_time = limit_date.getTime();
       // Todo メッセージ外だし
       window.confirm("予期せぬエラーが発生しました。")
     }
-    
   });
+  // オーディオ Mute機能
   isAudioMute = false
   audioMuteTrigger.addEventListener('click', () => {
     try {
@@ -247,8 +274,13 @@ let limit_time = limit_date.getTime();
       });
     });
 
-    dataConnection.on('data', ({ name, msg }) => {
-      messages.textContent += `${name}: ${msg}\n`;
+    dataConnection.on('data', ({ name, msg, file_name, file}) => {
+      if (msg) {
+        messages.textContent += `${name}: ${msg}\n`;        
+      }else{
+        //messages.textContent += file
+        fileRecieved(file_name, file)
+      }
     });
 
     dataConnection.once('close', () => {
@@ -261,7 +293,21 @@ let limit_time = limit_date.getTime();
       once: true,
     });
 
+    fileSendTrigger.addEventListener("change", function(e) {
+      console.log(e.target.files)
+      localFile = e.target.files[0]
+      onClickFileSend(dataConnection)
+     },false);
   });
+  const fileRecieved = function(file_name, file){
+    const a = document.createElement("a");
+    document.body.appendChild(a);
+    a.download = file_name;
+    a.href = file;
+    a.click();
+    a.remove();
+    URL.revokeObjectURL(file);
+  }
 
   peer.on('error', console.error);  
 
