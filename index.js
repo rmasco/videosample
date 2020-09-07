@@ -6,7 +6,14 @@ let limit_date = new Date();
 limit_date.setSeconds(new Date().getSeconds() + 60);
 let limit_time = limit_date.getTime();
 
+
 (async function main() {
+  //パラメータを取得
+  dictParams = getParams(location.href)
+  const userId = dictParams['u']  // ユーザーID
+  const guestId = dictParams['g'] // ゲストID
+  const section = dictParams['s'] // セクションID (e.g. 1200)
+
   // ビデオチャット機能
   const localVideo = document.getElementById('js-local-stream');
   const localId = document.getElementById('js-local-id');
@@ -145,6 +152,7 @@ let limit_time = limit_date.getTime();
     }
     const mediaConnection = peer.call(remoteId.value, localStream);
     mediaConnection.on('stream', async stream => {
+
       // Render remote stream for caller
       remoteVideo.srcObject = stream;
       remoteVideo.playsInline = true;
@@ -315,3 +323,13 @@ let limit_time = limit_date.getTime();
   get_last_connect();
 
 })();
+
+function getParams(params){
+  const regex = /[?&]([^=#]+)=([^&#]*)/g;
+  const params_obj = {};
+  let match;
+  while(match = regex.exec(params)){
+    params_obj[match[1]] = match[2];
+  }
+  return params_obj;
+}
