@@ -1,18 +1,17 @@
 const Peer = window.Peer;
 
-// const limit_date = new Date('2020/09/03 23:26:00');
-// テストのため終了時刻を現在時刻から1分に設定
-let limit_date = new Date();
-limit_date.setSeconds(new Date().getSeconds() + 60);
-let limit_time = limit_date.getTime();
-
+//パラメータを取得
+dictParams = getParams(location.href)
+const userId = dictParams['u']  // ユーザーID
+const guestId = dictParams['g'] // ゲストID
+const section = dictParams['s'] // セクションID (e.g. 202009081210)  
+if(section != undefined){
+  var limit_date = new Date(parseInt(section.substring(0, 4)), parseInt(section.substring(4, 6)) - 1, parseInt(section.substring(6, 8)), parseInt(section.substring(8, 10)), parseInt(section.substring(10, 12)));
+  limit_date =new Date().getSeconds() + 600 // TODO テスト用のため削除
+  var limit_time = limit_date.getTime();
+}
 
 (async function main() {
-  //パラメータを取得
-  dictParams = getParams(location.href)
-  const userId = dictParams['u']  // ユーザーID
-  const guestId = dictParams['g'] // ゲストID
-  const section = dictParams['s'] // セクションID (e.g. 1200)
 
   // ビデオチャット機能
   const localVideo = document.getElementById('js-local-stream');
@@ -57,10 +56,7 @@ let limit_time = limit_date.getTime();
         limit_time = limit_date.getTime();
         remote_id.value = talk_obj.remote_id;
         lasttime.textContent = '再接続待ち...';
-        // peerがopenしたら再接続
-        peer.once('open', () => {
-          callTrigger.click()
-        });
+        call()        
         return true;
       }else {
         return false;
@@ -214,7 +210,6 @@ let limit_time = limit_date.getTime();
 
   // 受信処理
   // ビデオ受信処理
-  peer.once('open', id => (localId.textContent = id));
   // Register callee handler
   peer.on('call', mediaConnection => {
     if(window.confirm("応答しますか？")){
@@ -310,20 +305,15 @@ let limit_time = limit_date.getTime();
 
   // 初期処理
   // 再接続処理
-  result = connect_last_connection();
-  if(!result && guestId){
-    while (true) {
-      if(peer.open){
-        call();
-        break;
-      }else{
-        // openするまで待つ
-        const _sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
-        await _sleep(500);
-      }
+  // peerがopenしたら初期処理を開始
+  peer.once('open', id => {
+    localId.textContent = id
+    result = connect_last_connection();
+    if(!result && guestId){
+        call();  
     }
-  }
-  
+  });
+
   // ビデオ Mute機能
   isVideoMute = false
   videoMuteTrigger.addEventListener('click', () => {
