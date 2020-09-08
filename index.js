@@ -7,7 +7,7 @@ const guestId = dictParams['g'] // ゲストID
 const section = dictParams['s'] // セクションID (e.g. 202009081210)  
 if(section != undefined){
   var limit_date = new Date(parseInt(section.substring(0, 4)), parseInt(section.substring(4, 6)) - 1, parseInt(section.substring(6, 8)), parseInt(section.substring(8, 10)), parseInt(section.substring(10, 12)));
-  limit_date =new Date().getSeconds() + 600 // TODO テスト用のため削除
+  limit_date = new Date()// TODO テスト用のため削除
   var limit_time = limit_date.getTime();
 }
 
