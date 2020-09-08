@@ -7,7 +7,7 @@ const guestId = dictParams['g'] // ゲストID
 const section = dictParams['s'] // セクションID (e.g. 202009081210)  
 if(section != undefined){
   var limit_date = new Date(parseInt(section.substring(0, 4)), parseInt(section.substring(4, 6)) - 1, parseInt(section.substring(6, 8)), parseInt(section.substring(8, 10)), parseInt(section.substring(10, 12)));
-  limit_date = new Date()// TODO テスト用のため削除
+  // limit_date = new Date() // TODO テスト用のため削除
   var limit_time = limit_date.getTime();
 }
 
@@ -34,6 +34,25 @@ if(section != undefined){
   // ID
   const index = Math.ceil( Math.random()*1000 );
   const peerID = userId;
+
+  // ボタンを通話中の活性状態にする
+  const changeActiveStateWhileTalking = function() {
+    closeTrigger.removeAttribute("disabled");
+    closeTrigger.style.color = "white";
+    sendTrigger.removeAttribute("disabled");
+    sendTrigger.style.color = "white";
+    fileSendTrigger.removeAttribute("disabled");
+    fileSendTrigger.style.color = "white";
+  };
+  // ボタンを非通話中の活性状態にする
+  const changeActiveStateWhileNotTalking = function() {
+    closeTrigger.setAttribute("disabled", true);
+    closeTrigger.style.color = "gray";
+    sendTrigger.setAttribute("disabled", true);
+    sendTrigger.style.color = "gray";
+    fileSendTrigger.setAttribute("disabled", true);
+    fileSendTrigger.style.color = "gray";
+  };
 
   // 再接続処理
   // 再接続を行った場合は、true
@@ -120,6 +139,43 @@ if(section != undefined){
     reader.readAsDataURL(localFile)
   };
 
+  // ビデオ Mute機能
+  isVideoMute = false
+  videoMuteTrigger.addEventListener('click', () => {
+    try {
+      isVideoMute = !isVideoMute
+      var videoTrack = localStream.getVideoTracks()[0];
+      if(isVideoMute){
+        videoTrack.enabled = false
+        // Todo ボタン表示の切り替え
+      }else {
+        videoTrack.enabled = true
+        // Todo ボタン表示の切り替え
+      }
+    } catch (error) {
+      // Todo メッセージ外だし
+      window.confirm("予期せぬエラーが発生しました。")
+    }
+  });
+  // オーディオ Mute機能
+  isAudioMute = false
+  audioMuteTrigger.addEventListener('click', () => {
+    try {
+      isAudioMute = ! isAudioMute
+      var audioTrack = localStream.getAudioTracks()[0];
+      if(isAudioMute){
+        audioTrack.enabled = false
+        // Todo ボタン表示の切り替え
+      }else {
+        audioTrack.enabled = true
+        // Todo ボタン表示の切り替え
+      }
+    } catch (error) {
+      // Todo メッセージ外だし
+      window.confirm("予期せぬエラーが発生しました。")
+    }
+  });
+
   meta.innerText = `
     UA: ${navigator.userAgent}
     SDK: ${sdkSrc ? sdkSrc.src : 'unknown'}
@@ -187,13 +243,18 @@ if(section != undefined){
         remote_id: userId,
         limit_date: limit_date
       });
+      // 通話開始時にボタンの活性状態を変更する
+      changeActiveStateWhileTalking()
     });
 
     dataConnection.on('data', recieve);
 
     dataConnection.once('close', () => {
       messages.textContent += `=== DataConnection has been closed ===\n`;
+      // Todo 処理が削除できていないとバグになる可能性
       sendTrigger.removeEventListener('click', onClickSend);
+      fileSendTrigger.removeEventListener('click', onClickFileSend);
+      changeActiveStateWhileNotTalking()
     });
 
     closeTrigger.addEventListener('click', () => {
@@ -242,12 +303,16 @@ if(section != undefined){
       sendTrigger.addEventListener('click', function(){
         onClickSend(dataConnection);
       });
+      changeActiveStateWhileTalking()
     });
 
     dataConnection.on('data', recieve);
     dataConnection.once('close', () => {
       messages.textContent += `=== DataConnection has been closed ===\n`;
+      // Todo 処理が削除できていないとバグになる可能性
       sendTrigger.removeEventListener('click', onClickSend);
+      fileSendTrigger.removeEventListener('click', onClickFileSend);
+      changeActiveStateWhileNotTalking()
     });
 
     // Register closing handler
@@ -259,7 +324,7 @@ if(section != undefined){
       console.log(e.target.files)
       localFile = e.target.files[0]
       onClickFileSend(dataConnection)
-     },false);
+     }, false);
   });
   const recieve = function(args) {
     if (args['msg']) {
@@ -306,6 +371,7 @@ if(section != undefined){
   // 初期処理
   // 再接続処理
   // peerがopenしたら初期処理を開始
+  changeActiveStateWhileNotTalking()
   peer.once('open', id => {
     localId.textContent = id
     result = connect_last_connection();
@@ -314,42 +380,9 @@ if(section != undefined){
     }
   });
 
-  // ビデオ Mute機能
-  isVideoMute = false
-  videoMuteTrigger.addEventListener('click', () => {
-    try {
-      isVideoMute = !isVideoMute
-      var videoTrack = localStream.getVideoTracks()[0];
-      if(isVideoMute){
-        videoTrack.enabled = false
-        // Todo ボタン表示の切り替え
-      }else {
-        videoTrack.enabled = true
-        // Todo ボタン表示の切り替え
-      }
-    } catch (error) {
-      // Todo メッセージ外だし
-      window.confirm("予期せぬエラーが発生しました。")
-    }
-  });
-  // オーディオ Mute機能
-  isAudioMute = false
-  audioMuteTrigger.addEventListener('click', () => {
-    try {
-      isAudioMute = ! isAudioMute
-      var audioTrack = localStream.getAudioTracks()[0];
-      if(isAudioMute){
-        audioTrack.enabled = false
-        // Todo ボタン表示の切り替え
-      }else {
-        audioTrack.enabled = true
-        // Todo ボタン表示の切り替え
-      }
-    } catch (error) {
-      // Todo メッセージ外だし
-      window.confirm("予期せぬエラーが発生しました。")
-    }
-  });
+  
+
+
 })();
 
 function getParams(params){
