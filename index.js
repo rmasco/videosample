@@ -135,6 +135,8 @@ if(section != undefined){
         file: reader.result
       };
       dataConnection.send(data);
+      // 自分にも表示
+      fileRecieved(peerID, localFile.name, reader.result)
     };
     reader.readAsDataURL(localFile)
   };
@@ -339,17 +341,15 @@ if(section != undefined){
     }else if(args['close']) {
       localStorage.removeItem('talk');
     }else {
-      fileRecieved(args['file_name'], args['file'])
+      fileRecieved(args['name'], args['file_name'], args['file'])
     }
   };
-  const fileRecieved = function(file_name, file){
+  const fileRecieved = function(name, file_name, file){
     const a = document.createElement("a");
-    document.body.appendChild(a);
+    messages.appendChild(a);
     a.download = file_name;
     a.href = file;
-    a.click();
-    a.remove();
-    URL.revokeObjectURL(file);
+    a.textContent = name + ": " + file_name
   }
   const closeDataConnection = async function(dataConnection) {
     // ローカルの通話枠を削除
