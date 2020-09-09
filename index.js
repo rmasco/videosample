@@ -1,4 +1,5 @@
 const Peer = window.Peer;
+const LIMIT_SEND_FILE_SIZE_MB = 1
 
 //パラメータを取得
 dictParams = getParams(location.href)
@@ -7,7 +8,6 @@ const guestId = dictParams['g'] // ゲストID
 const section = dictParams['s'] // セクションID (e.g. 202009081210)  
 if(section != undefined){
   var limit_date = new Date(parseInt(section.substring(0, 4)), parseInt(section.substring(4, 6)) - 1, parseInt(section.substring(6, 8)), parseInt(section.substring(8, 10)), parseInt(section.substring(10, 12)));
-  // limit_date = new Date() // TODO テスト用のため削除
   var limit_time = limit_date.getTime();
 }
 
@@ -115,6 +115,9 @@ if(section != undefined){
 
   // メッセージ送信処理
   const onClickSend = function(dataConnection) {
+    if(localText.value == "") {
+      return;
+    }
     const data = {
       name: peerID,
       msg: localText.value
@@ -125,18 +128,22 @@ if(section != undefined){
     localText.value = '';
   };
   // ファイル送信処理
-  localFile = null
-  const onClickFileSend = function(dataConnection) {
+  const onClickFileSend = function(dataConnection, localFile) {
     var reader = new FileReader()
     reader.onload = () => {
+      if (localFile.size > (LIMIT_SEND_FILE_SIZE_MB * 1024 * 1024)) {
+        window.alert(LIMIT_SEND_FILE_SIZE_MB + "MB以上のファイルは送信できません。");
+        return;
+      }
       const data = {
         name: peerID,
         file_name: localFile.name,
-        file: reader.result
+        file: reader.result,
+        size: localFile.size 
       };
       dataConnection.send(data);
       // 自分にも表示
-      fileRecieved(peerID, localFile.name, reader.result)
+      fileRecieved(peerID, localFile.name, reader.result,  localFile.size)
     };
     reader.readAsDataURL(localFile)
   };
@@ -237,9 +244,8 @@ if(section != undefined){
     var sendObj = {handleEvent: function() {
       onClickSend(dataConnection)
     }}
-    var fileSendObj = {handleEvent: function(e) {
-      localFile = e.target.files[0]
-      onClickFileSend(dataConnection)
+    var fileSendObj = {handleEvent: function(e) { 
+      onClickFileSend(dataConnection, e.target.files[0])
      }}
     var closeObj = {handleEvent: function() {
       closeDataConnection(dataConnection);
@@ -307,8 +313,7 @@ if(section != undefined){
       onClickSend(dataConnection)
     }}
     var fileSendObj = {handleEvent: function(e) {
-      localFile = e.target.files[0]
-      onClickFileSend(dataConnection)
+      onClickFileSend(dataConnection, e.target.files[0])
      }}
     var closeDataObj = {handleEvent: function() {
       closeDataConnection(dataConnection);
@@ -341,15 +346,15 @@ if(section != undefined){
     }else if(args['close']) {
       localStorage.removeItem('talk');
     }else {
-      fileRecieved(args['name'], args['file_name'], args['file'])
+      fileRecieved(args['name'], args['file_name'], args['file'], args['size'])
     }
   };
-  const fileRecieved = function(name, file_name, file){
+  const fileRecieved = function(name, file_name, file, size){
     const a = document.createElement("a");
     messages.appendChild(a);
     a.download = file_name;
     a.href = file;
-    a.textContent = name + ": " + file_name
+    a.textContent = name + ": " + file_name + " (" + getDispFileSize(size) + ")" 
   }
   const closeDataConnection = async function(dataConnection) {
     // ローカルの通話枠を削除
@@ -391,4 +396,18 @@ function getParams(params){
     params_obj[match[1]] = match[2];
   }
   return params_obj;
+}
+
+function getDispFileSize(byte){
+  mb_size = (byte / 1024 / 1024).toFixed(1) 
+  if(mb_size == "0.0") {
+    kb_size = (byte / 1024).toFixed(1) 
+    if(kb_size == "0.0") {
+      return byte + " Byte"
+    }else{
+      return kb_size + " KB"
+    }
+  }else{
+    return mb_size + " MB"
+  }
 }
