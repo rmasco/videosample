@@ -230,14 +230,24 @@ if(section != undefined){
       remoteVideo.srcObject = null;
       clearTimeout(timer);
     });
-
+     
     const dataConnection = peer.connect(guestId);
-
+    var sendObj = {handleEvent: function() {
+      onClickSend(dataConnection)
+    }}
+    var fileSendObj = {handleEvent: function(e) {
+      localFile = e.target.files[0]
+      onClickFileSend(dataConnection)
+     }}
+    var closeObj = {handleEvent: function() {
+      closeDataConnection(dataConnection);
+      closeMediaConnection(mediaConnection);
+    }}    
     dataConnection.once('open', async () => {
       messages.textContent += `=== DataConnection has been opened ===\n`;
-      sendTrigger.addEventListener('click', function(){
-        onClickSend(dataConnection);
-      });
+      sendTrigger.addEventListener('click', sendObj)
+      fileSendTrigger.addEventListener('change', fileSendObj)
+      closeTrigger.addEventListener('click', closeObj)
       // 通話枠情報を送信する
       dataConnection.send({
         remote_id: userId,
@@ -251,22 +261,11 @@ if(section != undefined){
 
     dataConnection.once('close', () => {
       messages.textContent += `=== DataConnection has been closed ===\n`;
-      // Todo 処理が削除できていないとバグになる可能性
-      sendTrigger.removeEventListener('click', onClickSend);
-      fileSendTrigger.removeEventListener('click', onClickFileSend);
+      sendTrigger.removeEventListener('click', sendObj);
+      fileSendTrigger.removeEventListener('change', fileSendObj);
+      closeTrigger.removeEventListener('click', closeObj);
       changeActiveStateWhileNotTalking()
     });
-
-    closeTrigger.addEventListener('click', () => {
-      closeDataConnection(dataConnection);
-      closeMediaConnection(mediaConnection);
-    });
-
-    fileSendTrigger.addEventListener("change", function(e) {
-      console.log(e.target.files)
-      localFile = e.target.files[0]
-      onClickFileSend(dataConnection)
-     },false);
   }
 
   // 受信処理
@@ -286,45 +285,47 @@ if(section != undefined){
       await remoteVideo.play().catch(console.error);
     });
 
+    var closeMediaObj = {handleEvent: function() {
+      closeMediaConnection(mediaConnection);
+    }}     
+    closeTrigger.addEventListener('click', closeMediaObj);
+
     mediaConnection.once('close', () => {
       remoteVideo.srcObject.getTracks().forEach(track => track.stop());
       remoteVideo.srcObject = null;
+      closeTrigger.removeEventListener('click', closeMediaObj);
       clearTimeout(timer);
     });
-
-    closeTrigger.addEventListener('click', () =>  closeMediaConnection(mediaConnection));
   });
 
   // データ接続受信処理
   // Register connected peer handler
   peer.on('connection', dataConnection => {
+    var sendObj = {handleEvent: function() {
+      onClickSend(dataConnection)
+    }}
+    var fileSendObj = {handleEvent: function(e) {
+      localFile = e.target.files[0]
+      onClickFileSend(dataConnection)
+     }}
+    var closeDataObj = {handleEvent: function() {
+      closeDataConnection(dataConnection);
+    }}     
     dataConnection.once('open', async () => {
       messages.textContent += `=== DataConnection has been opened ===\n`;
-      sendTrigger.addEventListener('click', function(){
-        onClickSend(dataConnection);
-      });
+      sendTrigger.addEventListener('click', sendObj)
+      fileSendTrigger.addEventListener('change', fileSendObj)
+      closeTrigger.addEventListener('click', closeDataObj)
       changeActiveStateWhileTalking()
     });
-
     dataConnection.on('data', recieve);
     dataConnection.once('close', () => {
       messages.textContent += `=== DataConnection has been closed ===\n`;
-      // Todo 処理が削除できていないとバグになる可能性
-      sendTrigger.removeEventListener('click', onClickSend);
-      fileSendTrigger.removeEventListener('click', onClickFileSend);
+      sendTrigger.removeEventListener('click', sendObj)
+      fileSendTrigger.removeEventListener('change', fileSendObj)
+      closeTrigger.removeEventListener('click', closeDataObj)
       changeActiveStateWhileNotTalking()
     });
-
-    // Register closing handler
-    closeTrigger.addEventListener('click', () => close(dataConnection), {
-      once: true,
-    });
-
-    fileSendTrigger.addEventListener("change", function(e) {
-      console.log(e.target.files)
-      localFile = e.target.files[0]
-      onClickFileSend(dataConnection)
-     }, false);
   });
   const recieve = function(args) {
     if (args['msg']) {
@@ -379,9 +380,6 @@ if(section != undefined){
         call();  
     }
   });
-
-  
-
 
 })();
 
