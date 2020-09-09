@@ -34,7 +34,7 @@ if(section != undefined){
   // ID
   const index = Math.ceil( Math.random()*1000 );
   const peerID = userId;
-
+   
   // ボタンを通話中の活性状態にする
   const changeActiveStateWhileTalking = function() {
     closeTrigger.removeAttribute("disabled");
@@ -69,13 +69,12 @@ if(section != undefined){
     // 制限時刻を過ぎているかチェック
     if(Math.floor((new Date(talk_obj.limit_date).getTime() - new Date().getTime()) / (1000)) > 0){
       // 接続時間内の場合は再接続するかどうか
-      if(window.confirm("再接続しますか？ ID: " + talk_obj.remote_id )){
+      if(window.confirm("再接続しますか？ ID: " + talk_obj.remote_id)){
         // limitを再接続前のものに変更
         limit_date = new Date(talk_obj.limit_date);
         limit_time = limit_date.getTime();
-        remote_id.value = talk_obj.remote_id;
         lasttime.textContent = '再接続待ち...';
-        call()        
+        call(talk_obj.remote_id)        
         return true;
       }else {
         return false;
@@ -209,14 +208,14 @@ if(section != undefined){
   }));
 
   // Register caller handler
-  callTrigger.addEventListener('click', call);
-  function call (){
+  // callTrigger.addEventListener('click', call);
+  function call (remote_id){
     // Note that you need to ensure the peer has connected to signaling server
     // before using methods of peer instance.
     if (!peer.open) {
       return;
     }
-    const mediaConnection = peer.call(guestId, localStream);
+    const mediaConnection = peer.call(remote_id, localStream);
     mediaConnection.on('stream', async stream => {
 
       // Render remote stream for caller
@@ -228,7 +227,7 @@ if(section != undefined){
       }, 1000);
       
       let json = JSON.stringify({
-        'remote_id': guestId,
+        'remote_id': remote_id,
         'limit_date': limit_date
       });
       localStorage.setItem('talk', json);
@@ -240,7 +239,7 @@ if(section != undefined){
       clearTimeout(timer);
     });
      
-    const dataConnection = peer.connect(guestId);
+    const dataConnection = peer.connect(remote_id);
     var sendObj = {handleEvent: function() {
       onClickSend(dataConnection)
     }}
@@ -382,10 +381,9 @@ if(section != undefined){
     localId.textContent = id
     result = connect_last_connection();
     if(!result && guestId){
-        call();  
+        call(guestId);  
     }
   });
-
 })();
 
 function getParams(params){
