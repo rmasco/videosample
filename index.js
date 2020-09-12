@@ -1,53 +1,92 @@
 const Peer = window.Peer;
+const LIMIT_SEND_FILE_SIZE_MB = 1
 
-// const limit_date = new Date('2020/09/03 23:26:00');
-// テストのため終了時刻を現在時刻から1分に設定
-let limit_date = new Date();
-limit_date.setSeconds(new Date().getSeconds() + 60);
-let limit_time = limit_date.getTime();
+//パラメータを取得
+dictParams = getParams(location.href)
+const userId = dictParams['u']  // ユーザーID
+const guestId = dictParams['g'] // ゲストID
+const section = dictParams['s'] // セクションID (e.g. 202009081210)  
+if(section != undefined){
+  var limit_date = new Date(parseInt(section.substring(0, 4)), parseInt(section.substring(4, 6)) - 1, parseInt(section.substring(6, 8)), parseInt(section.substring(8, 10)), parseInt(section.substring(10, 12)));
+  var limit_time = limit_date.getTime();
+}
 
 (async function main() {
+
+  // ビデオチャット機能
   const localVideo = document.getElementById('js-local-stream');
   const localId = document.getElementById('js-local-id');
   const callTrigger = document.getElementById('js-call-trigger');
   const closeTrigger = document.getElementById('js-close-trigger');
+  const videoMuteTrigger = document.getElementById('js-video-mute-trigger');
+  const audioMuteTrigger = document.getElementById('js-audio-mute-trigger');
   const remoteVideo = document.getElementById('js-remote-stream');
-  const remoteId = document.getElementById('js-remote-id');
   const meta = document.getElementById('js-meta');
   const sdkSrc = document.querySelector('script[src*=skyway]');
 
+  // メッセージ機能
+  const fileSendTrigger = document.getElementById('js-file-send-trigger');
   const localText = document.getElementById('js-local-text');
   const sendTrigger = document.getElementById('js-send-trigger');
   const messages = document.getElementById('js-messages');
   const lasttime = document.getElementById('lasttime');
 
+  // ID
   const index = Math.ceil( Math.random()*1000 );
-  const peerID = 'test-' + index;
+  const peerID = userId;
+   
+  // ボタンを通話中の活性状態にする
+  const changeActiveStateWhileTalking = function() {
+    closeTrigger.removeAttribute("disabled");
+    closeTrigger.style.color = "white";
+    sendTrigger.removeAttribute("disabled");
+    sendTrigger.style.color = "white";
+    fileSendTrigger.removeAttribute("disabled");
+    fileSendTrigger.style.color = "white";
+  };
+  // ボタンを非通話中の活性状態にする
+  const changeActiveStateWhileNotTalking = function() {
+    closeTrigger.setAttribute("disabled", true);
+    closeTrigger.style.color = "gray";
+    sendTrigger.setAttribute("disabled", true);
+    sendTrigger.style.color = "gray";
+    fileSendTrigger.setAttribute("disabled", true);
+    fileSendTrigger.style.color = "gray";
+  };
 
-  const get_last_connect = function(){
+  // 再接続処理
+  // 再接続を行った場合は、true
+  // 再接続を行わなかった場合は、false
+  const connect_last_connection = function(){
+    // ローカルストレージから一時データ取得
+    // 形式: limit_date
+    //      remote_id
     const talk_json = localStorage.getItem('talk');
-    if(!talk_json) return
-
+    // 一時データがなければ終了
+    if(!talk_json) return false
+    // 一時データをパース
     const talk_obj = JSON.parse(talk_json);
+    // 制限時刻を過ぎているかチェック
     if(Math.floor((new Date(talk_obj.limit_date).getTime() - new Date().getTime()) / (1000)) > 0){
       // 接続時間内の場合は再接続するかどうか
-      if(window.confirm("再接続しますか？ ID: " + talk_obj.remoteId )){
+      if(window.confirm("再接続しますか？ ID: " + talk_obj.remote_id)){
         // limitを再接続前のものに変更
         limit_date = new Date(talk_obj.limit_date);
         limit_time = limit_date.getTime();
-        remoteId.value = talk_obj.remoteId;
         lasttime.textContent = '再接続待ち...';
-        // peerがopenしたら再接続
-        peer.once('open', () => {
-          callTrigger.click()
-        });
+        call(talk_obj.remote_id)        
+        return true;
+      }else {
+        return false;
       }
     } else {
       // 接続時間切れの場合クリア
       localStorage.removeItem('talk');
+      return false;
     }
   }
 
+  // 制限時間を更新して、時間切れであれば終了する
   let timer;
   const update_limit_time = function(){
     const now_date = new Date();
@@ -72,7 +111,12 @@ let limit_time = limit_date.getTime();
       closeTrigger.click();
     }
   }
+
+  // メッセージ送信処理
   const onClickSend = function(dataConnection) {
+    if(localText.value == "") {
+      return;
+    }
     const data = {
       name: peerID,
       msg: localText.value
@@ -82,6 +126,63 @@ let limit_time = limit_date.getTime();
     messages.textContent += `You: ${data.msg}\n`;
     localText.value = '';
   };
+  // ファイル送信処理
+  const onClickFileSend = function(dataConnection, localFile) {
+    var reader = new FileReader()
+    reader.onload = () => {
+      if (localFile.size > (LIMIT_SEND_FILE_SIZE_MB * 1024 * 1024)) {
+        window.alert(LIMIT_SEND_FILE_SIZE_MB + "MB以上のファイルは送信できません。");
+        return;
+      }
+      const data = {
+        name: peerID,
+        file_name: localFile.name,
+        file: reader.result,
+        size: localFile.size 
+      };
+      dataConnection.send(data);
+      // 自分にも表示
+      fileRecieved(peerID, localFile.name, reader.result,  localFile.size)
+    };
+    reader.readAsDataURL(localFile)
+  };
+
+  // ビデオ Mute機能
+  isVideoMute = false
+  videoMuteTrigger.addEventListener('click', () => {
+    try {
+      isVideoMute = !isVideoMute
+      var videoTrack = localStream.getVideoTracks()[0];
+      if(isVideoMute){
+        videoTrack.enabled = false
+        // Todo ボタン表示の切り替え
+      }else {
+        videoTrack.enabled = true
+        // Todo ボタン表示の切り替え
+      }
+    } catch (error) {
+      // Todo メッセージ外だし
+      window.confirm("予期せぬエラーが発生しました。")
+    }
+  });
+  // オーディオ Mute機能
+  isAudioMute = false
+  audioMuteTrigger.addEventListener('click', () => {
+    try {
+      isAudioMute = ! isAudioMute
+      var audioTrack = localStream.getAudioTracks()[0];
+      if(isAudioMute){
+        audioTrack.enabled = false
+        // Todo ボタン表示の切り替え
+      }else {
+        audioTrack.enabled = true
+        // Todo ボタン表示の切り替え
+      }
+    } catch (error) {
+      // Todo メッセージ外だし
+      window.confirm("予期せぬエラーが発生しました。")
+    }
+  });
 
   meta.innerText = `
     UA: ${navigator.userAgent}
@@ -101,23 +202,22 @@ let limit_time = limit_date.getTime();
   localVideo.playsInline = true;
   await localVideo.play().catch(console.error);
 
-
   const peer = (window.peer = new Peer(peerID, {
     key: '976b1d6d-589e-48f6-8a9c-8f67e8062a7c',
     debug: 3,
   }));
 
   // Register caller handler
-  callTrigger.addEventListener('click', () => {
+  // callTrigger.addEventListener('click', call);
+  function call (remote_id){
     // Note that you need to ensure the peer has connected to signaling server
     // before using methods of peer instance.
     if (!peer.open) {
       return;
     }
-
-    const mediaConnection = peer.call(remoteId.value, localStream);
-
+    const mediaConnection = peer.call(remote_id, localStream);
     mediaConnection.on('stream', async stream => {
+
       // Render remote stream for caller
       remoteVideo.srcObject = stream;
       remoteVideo.playsInline = true;
@@ -127,7 +227,7 @@ let limit_time = limit_date.getTime();
       }, 1000);
       
       let json = JSON.stringify({
-        'remoteId': remoteId.value,
+        'remote_id': remote_id,
         'limit_date': limit_date
       });
       localStorage.setItem('talk', json);
@@ -138,33 +238,45 @@ let limit_time = limit_date.getTime();
       remoteVideo.srcObject = null;
       clearTimeout(timer);
     });
-
-    const dataConnection = peer.connect(remoteId.value);
-
+     
+    const dataConnection = peer.connect(remote_id);
+    var sendObj = {handleEvent: function() {
+      onClickSend(dataConnection)
+    }}
+    var fileSendObj = {handleEvent: function(e) { 
+      onClickFileSend(dataConnection, e.target.files[0])
+     }}
+    var closeObj = {handleEvent: function() {
+      closeDataConnection(dataConnection);
+      closeMediaConnection(mediaConnection);
+    }}    
     dataConnection.once('open', async () => {
       messages.textContent += `=== DataConnection has been opened ===\n`;
-      sendTrigger.addEventListener('click', function(){
-        onClickSend(dataConnection);
+      sendTrigger.addEventListener('click', sendObj)
+      fileSendTrigger.addEventListener('change', fileSendObj)
+      closeTrigger.addEventListener('click', closeObj)
+      // 通話枠情報を送信する
+      dataConnection.send({
+        remote_id: userId,
+        limit_date: limit_date
       });
+      // 通話開始時にボタンの活性状態を変更する
+      changeActiveStateWhileTalking()
     });
 
-    dataConnection.on('data', ({ name, msg }) => {
-      messages.textContent += `${name}: ${msg}\n`;
-    });
+    dataConnection.on('data', recieve);
 
     dataConnection.once('close', () => {
       messages.textContent += `=== DataConnection has been closed ===\n`;
-      sendTrigger.removeEventListener('click', onClickSend);
+      sendTrigger.removeEventListener('click', sendObj);
+      fileSendTrigger.removeEventListener('change', fileSendObj);
+      closeTrigger.removeEventListener('click', closeObj);
+      changeActiveStateWhileNotTalking()
     });
+  }
 
-    closeTrigger.addEventListener('click', () => {
-      mediaConnection.close(true)
-      dataConnection.close()
-    });
-  });
-
-  peer.once('open', id => (localId.textContent = id));
-
+  // 受信処理
+  // ビデオ受信処理
   // Register callee handler
   peer.on('call', mediaConnection => {
     if(window.confirm("応答しますか？")){
@@ -180,45 +292,120 @@ let limit_time = limit_date.getTime();
       await remoteVideo.play().catch(console.error);
     });
 
+    var closeMediaObj = {handleEvent: function() {
+      closeMediaConnection(mediaConnection);
+    }}     
+    closeTrigger.addEventListener('click', closeMediaObj);
+
     mediaConnection.once('close', () => {
       remoteVideo.srcObject.getTracks().forEach(track => track.stop());
       remoteVideo.srcObject = null;
+      closeTrigger.removeEventListener('click', closeMediaObj);
       clearTimeout(timer);
     });
-
-    closeTrigger.addEventListener('click', () => mediaConnection.close(true));
   });
 
-
+  // データ接続受信処理
   // Register connected peer handler
   peer.on('connection', dataConnection => {
+    var sendObj = {handleEvent: function() {
+      onClickSend(dataConnection)
+    }}
+    var fileSendObj = {handleEvent: function(e) {
+      onClickFileSend(dataConnection, e.target.files[0])
+     }}
+    var closeDataObj = {handleEvent: function() {
+      closeDataConnection(dataConnection);
+    }}     
     dataConnection.once('open', async () => {
       messages.textContent += `=== DataConnection has been opened ===\n`;
-
-      sendTrigger.addEventListener('click', function(){
-        onClickSend(dataConnection);
-      });
+      sendTrigger.addEventListener('click', sendObj)
+      fileSendTrigger.addEventListener('change', fileSendObj)
+      closeTrigger.addEventListener('click', closeDataObj)
+      changeActiveStateWhileTalking()
     });
-
-    dataConnection.on('data', ({ name, msg }) => {
-      messages.textContent += `${name}: ${msg}\n`;
-    });
-
+    dataConnection.on('data', recieve);
     dataConnection.once('close', () => {
       messages.textContent += `=== DataConnection has been closed ===\n`;
-      sendTrigger.removeEventListener('click', onClickSend);
+      sendTrigger.removeEventListener('click', sendObj)
+      fileSendTrigger.removeEventListener('change', fileSendObj)
+      closeTrigger.removeEventListener('click', closeDataObj)
+      changeActiveStateWhileNotTalking()
     });
-
-    // Register closing handler
-    closeTrigger.addEventListener('click', () => dataConnection.close(), {
-      once: true,
-    });
-
   });
+  const recieve = function(args) {
+    if (args['msg']) {
+      messages.textContent += `${args['name']}: ${args['msg']}\n`;        
+    }else if(args['remote_id']) {
+      let json = JSON.stringify({
+        'remote_id': args['remote_id'],
+        'limit_date': args['limit_date']
+      });
+      localStorage.setItem('talk', json);
+    }else if(args['close']) {
+      localStorage.removeItem('talk');
+    }else {
+      fileRecieved(args['name'], args['file_name'], args['file'], args['size'])
+    }
+  };
+  const fileRecieved = function(name, file_name, file, size){
+    const a = document.createElement("a");
+    messages.appendChild(a);
+    a.download = file_name;
+    a.href = file;
+    a.textContent = name + ": " + file_name + " (" + getDispFileSize(size) + ")" 
+  }
+  const closeDataConnection = async function(dataConnection) {
+    // ローカルの通話枠を削除
+    localStorage.removeItem('talk');
+    // 明示的に切断されたことを通知する
+    dataConnection.send({
+      close: true
+    });
+    // send処理を待つ
+    const _sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+    await _sleep(500);
+    dataConnection.close(true)
+  };
+  const closeMediaConnection = async function(mediaConnection) {
+    mediaConnection.close(true)
+  };
 
   peer.on('error', console.error);  
 
+  // 初期処理
   // 再接続処理
-  get_last_connect();
-
+  // peerがopenしたら初期処理を開始
+  changeActiveStateWhileNotTalking()
+  peer.once('open', id => {
+    localId.textContent = id
+    result = connect_last_connection();
+    if(!result && guestId){
+        call(guestId);  
+    }
+  });
 })();
+
+function getParams(params){
+  const regex = /[?&]([^=#]+)=([^&#]*)/g;
+  const params_obj = {};
+  let match;
+  while(match = regex.exec(params)){
+    params_obj[match[1]] = match[2];
+  }
+  return params_obj;
+}
+
+function getDispFileSize(byte){
+  mb_size = (byte / 1024 / 1024).toFixed(1) 
+  if(mb_size == "0.0") {
+    kb_size = (byte / 1024).toFixed(1) 
+    if(kb_size == "0.0") {
+      return byte + " Byte"
+    }else{
+      return kb_size + " KB"
+    }
+  }else{
+    return mb_size + " MB"
+  }
+}
