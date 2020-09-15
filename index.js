@@ -4,7 +4,7 @@ const LIMIT_SEND_FILE_SIZE_MB = 1
 //パラメータを取得
 dictParams = getParams(location.href)
 const userId = dictParams['u']  // ユーザーID
-const guestId = dictParams['g'] // ゲストID
+var guestId = dictParams['g']   // ゲストID
 const section = dictParams['s'] // セクションID (e.g. 202009081210)  
 if(section != undefined){
   var limit_date = new Date(parseInt(section.substring(0, 4)), parseInt(section.substring(4, 6)) - 1, parseInt(section.substring(6, 8)), parseInt(section.substring(8, 10)), parseInt(section.substring(10, 12)));
@@ -14,15 +14,21 @@ if(section != undefined){
 (async function main() {
 
   // ビデオチャット機能
+  var localStream = null
   const localVideo = document.getElementById('js-local-stream');
   const localId = document.getElementById('js-local-id');
-  const callTrigger = document.getElementById('js-call-trigger');
+  //const callTrigger = document.getElementById('js-call-trigger');
   const closeTrigger = document.getElementById('js-close-trigger');
   const videoMuteTrigger = document.getElementById('js-video-mute-trigger');
   const audioMuteTrigger = document.getElementById('js-audio-mute-trigger');
   const remoteVideo = document.getElementById('js-remote-stream');
   const meta = document.getElementById('js-meta');
   const sdkSrc = document.querySelector('script[src*=skyway]');
+  // 選択関連
+  const audioInputSelect = document.querySelector('select#audioSource');
+  const audioOutputSelect = document.querySelector('select#audioOutput');
+  const videoSelect = document.querySelector('select#videoSource');
+  const selectors = [audioInputSelect, audioOutputSelect, videoSelect];
 
   // メッセージ機能
   const fileSendTrigger = document.getElementById('js-file-send-trigger');
@@ -34,7 +40,7 @@ if(section != undefined){
   // ID
   const index = Math.ceil( Math.random()*1000 );
   const peerID = userId;
-   
+ 
   // ボタンを通話中の活性状態にする
   const changeActiveStateWhileTalking = function() {
     closeTrigger.removeAttribute("disabled");
@@ -74,7 +80,8 @@ if(section != undefined){
         limit_date = new Date(talk_obj.limit_date);
         limit_time = limit_date.getTime();
         lasttime.textContent = '再接続待ち...';
-        call(talk_obj.remote_id)        
+        call(talk_obj.remote_id)
+        guestId = talk_obj.remote_id
         return true;
       }else {
         return false;
@@ -152,32 +159,39 @@ if(section != undefined){
   videoMuteTrigger.addEventListener('click', () => {
     try {
       isVideoMute = !isVideoMute
-      var videoTrack = localStream.getVideoTracks()[0];
-      if(isVideoMute){
-        videoTrack.enabled = false
-        // Todo ボタン表示の切り替え
-      }else {
-        videoTrack.enabled = true
-        // Todo ボタン表示の切り替え
-      }
+      var tracks = localStream.getTracks();
+      tracks.forEach(track => {
+        if(track.kind == "video") {
+          if(isVideoMute){
+            track.enabled = false
+            // Todo ボタン表示の切り替え
+          }else {
+            track.enabled = true
+            // Todo ボタン表示の切り替え
+          }      
+        }
+      })
     } catch (error) {
       // Todo メッセージ外だし
       window.confirm("予期せぬエラーが発生しました。")
     }
   });
-  // オーディオ Mute機能
   isAudioMute = false
   audioMuteTrigger.addEventListener('click', () => {
     try {
       isAudioMute = ! isAudioMute
-      var audioTrack = localStream.getAudioTracks()[0];
-      if(isAudioMute){
-        audioTrack.enabled = false
-        // Todo ボタン表示の切り替え
-      }else {
-        audioTrack.enabled = true
-        // Todo ボタン表示の切り替え
-      }
+      var tracks = localStream.getTracks();
+      tracks.forEach(track => {
+        if(track.kind == "audio") {
+          if(isAudioMute){
+            track.enabled = false
+            // Todo ボタン表示の切り替え
+          }else {
+            track.enabled = true
+            // Todo ボタン表示の切り替え
+          }      
+        }
+      })
     } catch (error) {
       // Todo メッセージ外だし
       window.confirm("予期せぬエラーが発生しました。")
@@ -189,7 +203,7 @@ if(section != undefined){
     SDK: ${sdkSrc ? sdkSrc.src : 'unknown'}
   `.trim();
 
-  const localStream = await navigator.mediaDevices
+  localStream = await navigator.mediaDevices
     .getUserMedia({
       audio: true,
       video: true,
@@ -331,6 +345,7 @@ if(section != undefined){
       fileSendTrigger.removeEventListener('change', fileSendObj)
       closeTrigger.removeEventListener('click', closeDataObj)
       changeActiveStateWhileNotTalking()
+      //location.reload()
     });
   });
   const recieve = function(args) {
@@ -342,6 +357,8 @@ if(section != undefined){
         'limit_date': args['limit_date']
       });
       localStorage.setItem('talk', json);
+      // かけ直す際に使用 
+      guestId = args['remote_id']
     }else if(args['close']) {
       localStorage.removeItem('talk');
     }else {
@@ -371,12 +388,88 @@ if(section != undefined){
     mediaConnection.close(true)
   };
 
-  peer.on('error', console.error);  
+  // 選択関連
+  const getDevices = function() {
+    navigator.mediaDevices.enumerateDevices().then(function(deviceInfos) { // 成功時
+      // Handles being called several times to update labels. Preserve values.
+      const values = selectors.map(select => select.value);
+      selectors.forEach(select => {
+        while (select.firstChild) {
+          select.removeChild(select.firstChild);
+        }
+      });
+      for (let i = 0; i !== deviceInfos.length; ++i) {
+        const deviceInfo = deviceInfos[i];
+        const option = document.createElement('option');
+        option.value = deviceInfo.deviceId;
+        if (deviceInfo.kind === 'audioinput') {
+          option.text = deviceInfo.label || `microphone ${audioInputSelect.length + 1}`;
+          audioInputSelect.appendChild(option);
+        } else if (deviceInfo.kind === 'audiooutput') {
+          option.text = deviceInfo.label || `speaker ${audioOutputSelect.length + 1}`;
+          audioOutputSelect.appendChild(option);
+        } else if (deviceInfo.kind === 'videoinput') {
+          option.text = deviceInfo.label || `camera ${videoSelect.length + 1}`;
+          videoSelect.appendChild(option);
+        } else {
+          console.log('Some other kind of source/device: ', deviceInfo);
+        }
+      }
+      selectors.forEach((select, selectorIndex) => {
+        if (Array.prototype.slice.call(select.childNodes).some(n => n.value === values[selectorIndex])) {
+          select.value = values[selectorIndex];
+        }
+      });
+    })
+  }
+  const changeAudioDestination = function(){ 
+    remoteVideo.setSinkId(audioOutputSelect.value)
+      .then(function() {
+        console.log('setSinkID Success');
+      })
+      .catch(function(err) {
+        console.error('setSinkId Err:', err);
+      });
+  }
+  const changeDevices = async function(){
+    closeTrigger.click();
+    stopStreamedVideo(localVideo);
+    const audioSource = audioInputSelect.value;
+    const videoSource = videoSelect.value;
+    const constraints = {
+      audio: {deviceId: audioSource ? {exact: audioSource} : undefined},
+      video: {deviceId: videoSource ? {exact: videoSource} : undefined}
+    };
 
+    localStream = await navigator.mediaDevices
+                                  .getUserMedia(constraints)
+                                  .catch(console.error);
+    // Render local stream
+    localVideo.muted = true;
+    localVideo.srcObject = localStream;
+    localVideo.playsInline = true;
+
+    await localVideo.play().catch(console.error);
+    call(guestId)
+  }
+  function stopStreamedVideo(videoElem) {
+    let stream = videoElem.srcObject;
+    let tracks = stream.getTracks();
+    tracks.forEach(function(track) {
+        track.stop();
+    });
+    videoElem.srcObject = null;
+  }
+
+  peer.on('error', console.error);  
   // 初期処理
   // 再接続処理
   // peerがopenしたら初期処理を開始
   changeActiveStateWhileNotTalking()
+  getDevices()
+  audioInputSelect.onchange = changeDevices;
+  audioOutputSelect.onchange = changeAudioDestination;
+  videoSelect.onchange = changeDevices;
   peer.once('open', id => {
     localId.textContent = id
     result = connect_last_connection();
