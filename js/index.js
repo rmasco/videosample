@@ -17,7 +17,6 @@ if(section != undefined){
   var localStream = null
   const localVideo = document.getElementById('js-local-stream');
   const localId = document.getElementById('js-local-id');
-  //const callTrigger = document.getElementById('js-call-trigger');
   const closeTrigger = document.getElementById('js-close-trigger');
   const videoMuteTrigger = document.getElementById('js-video-mute-trigger');
   const audioMuteTrigger = document.getElementById('js-audio-mute-trigger');
@@ -221,8 +220,6 @@ if(section != undefined){
     debug: 3,
   }));
 
-  // Register caller handler
-  // callTrigger.addEventListener('click', call);
   function call (remote_id){
     // Note that you need to ensure the peer has connected to signaling server
     // before using methods of peer instance.
