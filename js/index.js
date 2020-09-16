@@ -29,7 +29,7 @@ if(section != undefined){
   const audioOutputSelect = document.querySelector('select#audioOutput');
   const videoSelect = document.querySelector('select#videoSource');
   const selectors = [audioInputSelect, audioOutputSelect, videoSelect];
-
+  
   // メッセージ機能
   const fileSendTrigger = document.getElementById('js-file-send-trigger');
   const localText = document.getElementById('js-local-text');
