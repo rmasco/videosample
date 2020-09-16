@@ -231,7 +231,6 @@ if(section != undefined){
     }
     const mediaConnection = peer.call(remote_id, localStream);
     mediaConnection.on('stream', async stream => {
-
       // Render remote stream for caller
       remoteVideo.srcObject = stream;
       remoteVideo.playsInline = true;
@@ -245,6 +244,42 @@ if(section != undefined){
         'limit_date': limit_date
       });
       localStorage.setItem('talk', json);
+
+      // mediaを接続して初めてデータを接続する
+      const dataConnection = peer.connect(remote_id);
+      var sendObj = {handleEvent: function() {
+        onClickSend(dataConnection)
+      }}
+      var fileSendObj = {handleEvent: function(e) { 
+        onClickFileSend(dataConnection, e.target.files[0])
+       }}
+      var closeObj = {handleEvent: function() {
+        closeDataConnection(dataConnection);
+        closeMediaConnection(mediaConnection);
+      }}    
+      dataConnection.once('open', async () => {
+        messages.textContent += `=== DataConnection has been opened ===\n`;
+        sendTrigger.addEventListener('click', sendObj)
+        fileSendTrigger.addEventListener('change', fileSendObj)
+        closeTrigger.addEventListener('click', closeObj)
+        // 通話枠情報を送信する
+        dataConnection.send({
+          remote_id: userId,
+          limit_date: limit_date
+        });
+        // 通話開始時にボタンの活性状態を変更する
+        changeActiveStateWhileTalking()
+      });
+  
+      dataConnection.on('data', recieve);
+  
+      dataConnection.once('close', () => {
+        messages.textContent += `=== DataConnection has been closed ===\n`;
+        sendTrigger.removeEventListener('click', sendObj);
+        fileSendTrigger.removeEventListener('change', fileSendObj);
+        closeTrigger.removeEventListener('click', closeObj);
+        changeActiveStateWhileNotTalking()
+      });
     });
 
     mediaConnection.once('close', () => {
@@ -253,40 +288,7 @@ if(section != undefined){
       clearTimeout(timer);
     });
      
-    const dataConnection = peer.connect(remote_id);
-    var sendObj = {handleEvent: function() {
-      onClickSend(dataConnection)
-    }}
-    var fileSendObj = {handleEvent: function(e) { 
-      onClickFileSend(dataConnection, e.target.files[0])
-     }}
-    var closeObj = {handleEvent: function() {
-      closeDataConnection(dataConnection);
-      closeMediaConnection(mediaConnection);
-    }}    
-    dataConnection.once('open', async () => {
-      messages.textContent += `=== DataConnection has been opened ===\n`;
-      sendTrigger.addEventListener('click', sendObj)
-      fileSendTrigger.addEventListener('change', fileSendObj)
-      closeTrigger.addEventListener('click', closeObj)
-      // 通話枠情報を送信する
-      dataConnection.send({
-        remote_id: userId,
-        limit_date: limit_date
-      });
-      // 通話開始時にボタンの活性状態を変更する
-      changeActiveStateWhileTalking()
-    });
 
-    dataConnection.on('data', recieve);
-
-    dataConnection.once('close', () => {
-      messages.textContent += `=== DataConnection has been closed ===\n`;
-      sendTrigger.removeEventListener('click', sendObj);
-      fileSendTrigger.removeEventListener('change', fileSendObj);
-      closeTrigger.removeEventListener('click', closeObj);
-      changeActiveStateWhileNotTalking()
-    });
   }
 
   // 受信処理
