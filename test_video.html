@@ -1,14 +1,6 @@
 <!DOCTYPE html>
-<!--
- *  Copyright (c) 2015 The WebRTC project authors. All Rights Reserved.
- *
- *  Use of this source code is governed by a BSD-style license
- *  that can be found in the LICENSE file in the root of the source
- *  tree.
--->
 <html>
 <head>
-
     <meta charset="utf-8">
     <meta name="description" content="WebRTC code samples">
     <meta name="viewport" content="width=device-width, user-scalable=yes, initial-scale=1, maximum-scale=1">
@@ -30,11 +22,9 @@
             /* display: inline-block; */
             margin: 0 0 1em 0;
         }
-
         p.small {
             font-size: 0.7em;
         }
-
         label {
             width: 12em;
             display: inline-block;
@@ -42,36 +32,29 @@
     </style>
 </head>
 <body>
-<div id="container">
+<button id="startTest">start test</button><br/>
+<div id="container" style=display:none>
     <h1>テスト通話</h1>
-    <button id="startTest">start test</button><br/>
     <div class="select">
-        <label for="audioSource">Audio input source: </label><select id="audioSource"></select>
+        <label for="audioSource">マイク</label><select id="audioSource"></select>
     </div>
     <div class="select">
-        <label for="audioOutput">Audio output destination: </label><select id="audioOutput"></select>
+        <label for="audioOutput">スピーカー</label><select id="audioOutput"></select>
     </div>
     <div class="select">
-        <label for="videoSource">Video source: </label><select id="videoSource"></select>
+        <label for="videoSource">ビデオ</label><select id="videoSource"></select>
     </div>
     <div>
-        <video id="js-local-stream" playsinline autoplay></video>
+        <video id="js-local-stream" playsinline autoplay width="100%"></video>
     </div>
     <div>
-        <audio src="audio/test-audio.mp3" id="js-local-audio" autoplay controls></audio>
+        <audio src="audio/test-audio.mp3" id="js-local-audio" autoplay controls controlslist="nodownload" width="100%"></audio>
+    </div>
+    <div>
+        <canvas id="graph" ></canvas>
     </div>
 </div>
-<div>
-    <button id="startmic">Start Mic</button><br/>
-    <table>
-    <tr><td>Frequency/TimeDomain : </td><td><select id="mode" ><option>Frequency</option><option>TimeDomain</option></select></td></tr>
-    <tr><td>SmoothingTimeConstant : </td><td><input type="text" id="smoothing" value="0.9"/></td></tr>
-    <tr><td>MinDecibels : </td><td><input type="text" id="min"/></td></tr>
-    <tr><td>MaxDecibels : </td><td><input type="text" id="max"/></td></tr>
-    </table>
-    <br/><br/>
-    <canvas id="graph" width="512" height="256"></canvas>
-</div>
+
 <script src="https://webrtc.github.io/adapter/adapter-latest.js"></script>
 <script src="js/test_video.js" async></script>
 </body>
