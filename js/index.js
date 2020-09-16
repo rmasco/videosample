@@ -5,7 +5,7 @@ const LIMIT_SEND_FILE_SIZE_MB = 1
 dictParams = getParams(location.href)
 const userId = dictParams['u']  // ユーザーID
 var guestId = dictParams['g']   // ゲストID
-const section = dictParams['s'] // セクションID (e.g. 202009081210)  
+var section = dictParams['s'] // セクションID (e.g. 202009081210)  
 if(section != undefined){
   var limit_date = new Date(parseInt(section.substring(0, 4)), parseInt(section.substring(4, 6)) - 1, parseInt(section.substring(6, 8)), parseInt(section.substring(8, 10)), parseInt(section.substring(10, 12)));
   var limit_time = limit_date.getTime();
@@ -28,7 +28,6 @@ if(section != undefined){
   const audioOutputSelect = document.querySelector('select#audioOutput');
   const videoSelect = document.querySelector('select#videoSource');
   const selectors = [audioInputSelect, audioOutputSelect, videoSelect];
-  
   // メッセージ機能
   const fileSendTrigger = document.getElementById('js-file-send-trigger');
   const localText = document.getElementById('js-local-text');
@@ -112,9 +111,7 @@ if(section != undefined){
       }, 1000);
     } else {
       // 時間切れ
-      lasttime.textContent = 'トーク終了しました';
-      // 切断
-      closeTrigger.click();
+      lasttime.textContent = '残り時間: 0秒';
     }
   }
 
@@ -178,7 +175,7 @@ if(section != undefined){
   isAudioMute = false
   audioMuteTrigger.addEventListener('click', () => {
     try {
-      isAudioMute = ! isAudioMute
+      isAudioMute = !isAudioMute
       var tracks = localStream.getTracks();
       tracks.forEach(track => {
         if(track.kind == "audio") {
@@ -262,7 +259,7 @@ if(section != undefined){
         // 通話枠情報を送信する
         dataConnection.send({
           remote_id: userId,
-          limit_date: limit_date
+          section: section
         });
         // 通話開始時にボタンの活性状態を変更する
         changeActiveStateWhileTalking()
@@ -284,8 +281,6 @@ if(section != undefined){
       remoteVideo.srcObject = null;
       clearTimeout(timer);
     });
-     
-
   }
 
   // 受信処理
@@ -313,8 +308,8 @@ if(section != undefined){
     mediaConnection.once('close', () => {
       remoteVideo.srcObject.getTracks().forEach(track => track.stop());
       remoteVideo.srcObject = null;
-      closeTrigger.removeEventListener('click', closeMediaObj);
       clearTimeout(timer);
+      closeTrigger.removeEventListener('click', closeMediaObj);
     });
   });
 
@@ -353,11 +348,19 @@ if(section != undefined){
     }else if(args['remote_id']) {
       let json = JSON.stringify({
         'remote_id': args['remote_id'],
-        'limit_date': args['limit_date']
+        'section': args['section']
       });
       localStorage.setItem('talk', json);
       // かけ直す際に使用 
+
       guestId = args['remote_id']
+      section = args['section']
+      limit_date = new Date(parseInt(section.substring(0, 4)), parseInt(section.substring(4, 6)) - 1, parseInt(section.substring(6, 8)), parseInt(section.substring(8, 10)), parseInt(section.substring(10, 12)));
+      limit_time = limit_date.getTime();
+      // 通話を受け取った際に制限時間を設定
+      timer = setTimeout(function(){
+        update_limit_time();
+      }, 1000);
     }else if(args['close']) {
       localStorage.removeItem('talk');
     }else {
