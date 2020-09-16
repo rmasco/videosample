@@ -160,10 +160,10 @@ if(section != undefined){
         if(track.kind == "video") {
           if(isVideoMute){
             track.enabled = false
-            // Todo ボタン表示の切り替え
+            videoMuteTrigger.innerText = "video mute 解除";
           }else {
             track.enabled = true
-            // Todo ボタン表示の切り替え
+            videoMuteTrigger.innerText = "video mute";
           }      
         }
       })
@@ -181,10 +181,10 @@ if(section != undefined){
         if(track.kind == "audio") {
           if(isAudioMute){
             track.enabled = false
-            // Todo ボタン表示の切り替え
+            audioMuteTrigger.innerText = "audio mute 解除";
           }else {
             track.enabled = true
-            // Todo ボタン表示の切り替え
+            audioMuteTrigger.innerText = "audio mute";
           }      
         }
       })
@@ -266,7 +266,6 @@ if(section != undefined){
       });
   
       dataConnection.on('data', recieve);
-  
       dataConnection.once('close', () => {
         messages.textContent += `=== DataConnection has been closed ===\n`;
         sendTrigger.removeEventListener('click', sendObj);
@@ -352,7 +351,6 @@ if(section != undefined){
       });
       localStorage.setItem('talk', json);
       // かけ直す際に使用 
-
       guestId = args['remote_id']
       section = args['section']
       limit_date = new Date(parseInt(section.substring(0, 4)), parseInt(section.substring(4, 6)) - 1, parseInt(section.substring(6, 8)), parseInt(section.substring(8, 10)), parseInt(section.substring(10, 12)));
