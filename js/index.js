@@ -126,7 +126,8 @@ if(section != undefined){
     };
     dataConnection.send(data);
 
-    messages.textContent += `You: ${data.msg}\n`;
+    //messages.textContent += `You: ${data.msg}\n`;
+    outputMessage(`You: ${data.msg}`);
     localText.value = '';
   };
   // ファイル送信処理
@@ -145,7 +146,7 @@ if(section != undefined){
       };
       dataConnection.send(data);
       // 自分にも表示
-      fileRecieved(peerID, localFile.name, reader.result,  localFile.size)
+      fileRecieved("You", localFile.name, reader.result,  localFile.size)
     };
     reader.readAsDataURL(localFile)
   };
@@ -252,7 +253,9 @@ if(section != undefined){
         closeMediaConnection(mediaConnection);
       }}    
       dataConnection.once('open', async () => {
-        messages.textContent += `=== DataConnection has been opened ===\n`;
+        //messages.textContent += `=== DataConnection has been opened ===\n`;
+        outputMessage(`=== DataConnection has been opened ===`);
+
         sendTrigger.addEventListener('click', sendObj)
         fileSendTrigger.addEventListener('change', fileSendObj)
         closeTrigger.addEventListener('click', closeObj)
@@ -267,7 +270,9 @@ if(section != undefined){
   
       dataConnection.on('data', recieve);
       dataConnection.once('close', () => {
-        messages.textContent += `=== DataConnection has been closed ===\n`;
+        //messages.textContent += `=== DataConnection has been closed ===\n`;
+        outputMessage(`=== DataConnection has been closed ===\n`);
+
         sendTrigger.removeEventListener('click', sendObj);
         fileSendTrigger.removeEventListener('change', fileSendObj);
         closeTrigger.removeEventListener('click', closeObj);
@@ -325,7 +330,8 @@ if(section != undefined){
       closeDataConnection(dataConnection);
     }}     
     dataConnection.once('open', async () => {
-      messages.textContent += `=== DataConnection has been opened ===\n`;
+      //messages.textContent += `=== DataConnection has been opened ===\n`;
+      outputMessage(`=== DataConnection has been opened ===`);
       sendTrigger.addEventListener('click', sendObj)
       fileSendTrigger.addEventListener('change', fileSendObj)
       closeTrigger.addEventListener('click', closeDataObj)
@@ -333,7 +339,8 @@ if(section != undefined){
     });
     dataConnection.on('data', recieve);
     dataConnection.once('close', () => {
-      messages.textContent += `=== DataConnection has been closed ===\n`;
+      //messages.textContent += `=== DataConnection has been closed ===\n`;
+      outputMessage(`=== DataConnection has been closed ===`);
       sendTrigger.removeEventListener('click', sendObj)
       fileSendTrigger.removeEventListener('change', fileSendObj)
       closeTrigger.removeEventListener('click', closeDataObj)
@@ -343,7 +350,8 @@ if(section != undefined){
   });
   const recieve = function(args) {
     if (args['msg']) {
-      messages.textContent += `${args['name']}: ${args['msg']}\n`;        
+      //messages.textContent += `${args['name']}: ${args['msg']}\n`;
+      outputMessage(`${args['name']}: ${args['msg']}`) 
     }else if(args['remote_id']) {
       let json = JSON.stringify({
         'remote_id': args['remote_id'],
@@ -366,11 +374,18 @@ if(section != undefined){
     }
   };
   const fileRecieved = function(name, file_name, file, size){
+    const p = document.createElement("p");
     const a = document.createElement("a");
-    messages.appendChild(a);
+    p.appendChild(a);
+    messages.appendChild(p);
     a.download = file_name;
     a.href = file;
     a.textContent = name + ": " + file_name + " (" + getDispFileSize(size) + ")" 
+  }
+  const outputMessage = function(message){
+    const p = document.createElement("p");
+    messages.appendChild(p);
+    p.textContent = message
   }
   const closeDataConnection = async function(dataConnection) {
     // ローカルの通話枠を削除
