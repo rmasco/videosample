@@ -44,6 +44,7 @@
 <body>
 <div id="container">
     <h1>テスト通話</h1>
+    <button id="startTest">start test</button><br/>
     <div class="select">
         <label for="audioSource">Audio input source: </label><select id="audioSource"></select>
     </div>
@@ -57,11 +58,19 @@
         <video id="js-local-stream" playsinline autoplay></video>
     </div>
     <div>
-        <button id="startmic">Start Mic</button><br/>
-    </div>
-    <div>
         <audio src="audio/test-audio.mp3" id="js-local-audio" autoplay controls></audio>
     </div>
+</div>
+<div>
+    <button id="startmic">Start Mic</button><br/>
+    <table>
+    <tr><td>Frequency/TimeDomain : </td><td><select id="mode" ><option>Frequency</option><option>TimeDomain</option></select></td></tr>
+    <tr><td>SmoothingTimeConstant : </td><td><input type="text" id="smoothing" value="0.9"/></td></tr>
+    <tr><td>MinDecibels : </td><td><input type="text" id="min"/></td></tr>
+    <tr><td>MaxDecibels : </td><td><input type="text" id="max"/></td></tr>
+    </table>
+    <br/><br/>
+    <canvas id="graph" width="512" height="256"></canvas>
 </div>
 <script src="https://webrtc.github.io/adapter/adapter-latest.js"></script>
 <script src="js/test_video.js" async></script>
