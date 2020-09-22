@@ -425,16 +425,17 @@ if(section != undefined){
       //messages.textContent += `${args['name']}: ${args['msg']}\n`;
       outputMessage(`${args['name']}: ${args['msg']}`) 
     }else if(args['remote_id']) {
-      let json = JSON.stringify({
-        'remote_id': args['remote_id'],
-        'section': args['section']
-      });
-      localStorage.setItem('talk', json);
+
       // かけ直す際に使用 
       guestId = args['remote_id']
       section = args['section']
       limit_date = new Date(parseInt(section.substring(0, 4)), parseInt(section.substring(4, 6)) - 1, parseInt(section.substring(6, 8)), parseInt(section.substring(8, 10)), parseInt(section.substring(10, 12)));
       limit_time = limit_date.getTime();
+      let json = JSON.stringify({
+        'remote_id': args['remote_id'],
+        'limit_date': limit_date
+      });
+      localStorage.setItem('talk', json);
       // 通話を受け取った際に制限時間を設定
       timer = setTimeout(function(){
         update_limit_time();
