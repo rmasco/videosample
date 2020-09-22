@@ -478,7 +478,9 @@ if(section != undefined){
     localVideo.srcObject = localStream;
     localVideo.playsInline = true;
     await localVideo.play().catch(console.error);
-    mediaConnection.replaceStream(localStream);
+    if(mediaConnection.remoteStream != undefined && mediaConnection.remoteStream.active){
+      mediaConnection.replaceStream(localStream);
+    }
   }
 
   // 初期処理
