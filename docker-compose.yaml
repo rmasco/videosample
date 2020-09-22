@@ -1,9 +1,25 @@
 version: "3"
 services:
   web:
-    image: nginx:alpine
+     image: php:5.6-apache
+     container_name: php56-apache-web
+     volumes:
+       - ".:/var/www/html"
+     networks:
+       docker-net-001:
+         aliases:
+           - testvideosample.com
+  https-portal:
+    image: steveltn/https-portal
     ports:
-      - 8888:80
-    privileged: true
-    volumes:
-      - .:/usr/share/nginx/html
+      - 80:80
+      - 443:443
+    restart: always
+    environment:
+      STAGE: local
+      DOMAINS: 'testvideosample.com -> http://testvideosample.com'
+    networks:
+     - docker-net-001
+
+networks:
+ docker-net-001:
