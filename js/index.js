@@ -8,8 +8,8 @@ const userId = dictParams['u']  // ユーザーID
 var guestId = dictParams['g']   // ゲストID
 var section = dictParams['s']   // セクションID (e.g. 202009081210)  
 if(section != undefined){
-  var limit_date = new Date(parseInt(section.substring(0, 4)), parseInt(section.substring(4, 6)) - 1, parseInt(section.substring(6, 8)), parseInt(section.substring(8, 10)), parseInt(section.substring(10, 12)));
-  var limit_time = limit_date.getTime();
+  var limitDate = new Date(parseInt(section.substring(0, 4)), parseInt(section.substring(4, 6)) - 1, parseInt(section.substring(6, 8)), parseInt(section.substring(8, 10)), parseInt(section.substring(10, 12)));
+  var limitTime = limitDate.getTime();
 }
 
 (async function main() {
@@ -63,20 +63,20 @@ if(section != undefined){
   // 再接続処理
   // 再接続を行った場合は、true
   // 再接続を行わなかった場合は、false
-  const connect_last_connection = function(){
+  const connectLastConnection = function(){
     // ローカルストレージから一時データ取得
-    // 形式: limit_date
-    //      remote_id
-    const talk_json = localStorage.getItem('talk');
+    // 形式: limitDate
+    //      remoteId
+    const talkJson = localStorage.getItem('talk');
     // 一時データがなければ終了
-    if(!talk_json) return false
+    if(!talkJson) return false
     // 一時データをパース
-    const talk_obj = JSON.parse(talk_json);
+    const talkObj = JSON.parse(talkJson);
     // 制限時刻を過ぎているかチェック
-    if(Math.floor((new Date(talk_obj.limit_date).getTime() - new Date().getTime()) / (1000)) > 0){
+    if(Math.floor((new Date(talkObj.limitDate).getTime() - new Date().getTime()) / (1000)) > 0){
       // 接続時間内の場合は再接続するかどうか確認する
       var divMessage = document.getElementById('modal_reconnect_title');
-      divMessage.innerText = "再接続しますか？ ID: " + talk_obj.remote_id
+      divMessage.innerText = "再接続しますか？ ID: " + talkObj.remoteId
       var divButton = document.getElementById('modal_recconect_button_div');
       divButton.innerHTML = ""
       // はい
@@ -87,11 +87,11 @@ if(section != undefined){
       divButton.appendChild(modalButtonYes)
       modalButtonYes.addEventListener('click', function() {
         // limitを再接続前のものに変更
-        limit_date = new Date(talk_obj.limit_date);
-        limit_time = limit_date.getTime();
+        limitDate = new Date(talkObj.limitDate);
+        limitTime = limitDate.getTime();
         lasttime.textContent = '再接続待ち...';
-        call(talk_obj.remote_id);
-        guestId = talk_obj.remote_id;
+        call(talkObj.remoteId);
+        guestId = talkObj.remoteId;
         // モーダルダイアログを隠す
         $('body').removeClass('modal-open'); 
         $('.modal-backdrop').remove();
@@ -121,21 +121,21 @@ if(section != undefined){
 
   // 制限時間を更新して、時間切れであれば終了する
   let timer;
-  const update_limit_time = function(){
-    const now_date = new Date();
-    console.log(now_date);
-    const now_timestamp = now_date.getTime();
-    console.log(limit_time);
-    console.log(now_timestamp);
-    console.log(limit_time - now_timestamp);
-    console.log((limit_time - now_timestamp) / (1000));
-    const diff_time = Math.floor((limit_time - now_timestamp) / (1000));
-    console.log(diff_time);
-    console.log('残り時間: ' + diff_time + '秒');
-    if(diff_time > 0){
-      lasttime.textContent = '残り時間: ' + diff_time + '秒';
+  const updateLimitTime = function(){
+    const nowDate = new Date();
+    console.log(nowDate);
+    const nowTimestamp = nowDate.getTime();
+    console.log(limitTime);
+    console.log(nowTimestamp);
+    console.log(limitTime - nowTimestamp);
+    console.log((limitTime - nowTimestamp) / (1000));
+    const diffTime = Math.floor((limitTime - nowTimestamp) / (1000));
+    console.log(diffTime);
+    console.log('残り時間: ' + diffTime + '秒');
+    if(diffTime > 0){
+      lasttime.textContent = '残り時間: ' + diffTime + '秒';
       setTimeout(function(){
-        timer = update_limit_time();
+        timer = updateLimitTime();
       }, 1000);
     } else {
       // 時間切れ
@@ -168,7 +168,7 @@ if(section != undefined){
       }
       const data = {
         name: peerID,
-        file_name: localFile.name,
+        fileName: localFile.name,
         file: reader.result,
         size: localFile.size 
       };
@@ -244,13 +244,13 @@ if(section != undefined){
     debug: 3,
   }));
 
-  function call (remote_id){
+  function call (remoteId){
     // Note that you need to ensure the peer has connected to signaling server
     // before using methods of peer instance.
     if (!peer.open) {
       return;
     }
-    const mediaConnection = peer.call(remote_id, localStream);
+    const mediaConnection = peer.call(remoteId, localStream);
     audioInputSelect.onchange = function(){ 
       changeDevices(mediaConnection);      
     }
@@ -264,17 +264,17 @@ if(section != undefined){
       await remoteVideo.play().catch(console.error);
       connectionId = mediaConnection._options.connectionId;
       timer = setTimeout(function(){
-        update_limit_time();
+        updateLimitTime();
       }, 1000);
       
       let json = JSON.stringify({
-        'remote_id': remote_id,
-        'limit_date': limit_date
+        'remoteId': remoteId,
+        'limitDate': limitDate
       });
       localStorage.setItem('talk', json);
 
       // mediaを接続して初めてデータを接続する
-      const dataConnection = peer.connect(remote_id);
+      const dataConnection = peer.connect(remoteId);
       var sendObj = {handleEvent: function() {
         onClickSend(dataConnection)
       }}
@@ -294,7 +294,7 @@ if(section != undefined){
         closeTrigger.addEventListener('click', closeObj)
         // 通話枠情報を送信する
         dataConnection.send({
-          remote_id: userId,
+          remoteId: userId,
           section: section
         });
         // 通話開始時にボタンの活性状態を変更する
@@ -424,36 +424,36 @@ if(section != undefined){
     if (args['msg']) {
       //messages.textContent += `${args['name']}: ${args['msg']}\n`;
       outputMessage(`${args['name']}: ${args['msg']}`) 
-    }else if(args['remote_id']) {
+    }else if(args['remoteId']) {
 
       // かけ直す際に使用 
-      guestId = args['remote_id']
+      guestId = args['remoteId']
       section = args['section']
-      limit_date = new Date(parseInt(section.substring(0, 4)), parseInt(section.substring(4, 6)) - 1, parseInt(section.substring(6, 8)), parseInt(section.substring(8, 10)), parseInt(section.substring(10, 12)));
-      limit_time = limit_date.getTime();
+      limitDate = new Date(parseInt(section.substring(0, 4)), parseInt(section.substring(4, 6)) - 1, parseInt(section.substring(6, 8)), parseInt(section.substring(8, 10)), parseInt(section.substring(10, 12)));
+      limitTime = limitDate.getTime();
       let json = JSON.stringify({
-        'remote_id': args['remote_id'],
-        'limit_date': limit_date
+        'remoteId': args['remoteId'],
+        'limitDate': limitDate
       });
       localStorage.setItem('talk', json);
       // 通話を受け取った際に制限時間を設定
       timer = setTimeout(function(){
-        update_limit_time();
+        updateLimitTime();
       }, 1000);
     }else if(args['close']) {
       localStorage.removeItem('talk');
     }else {
-      fileRecieved(args['name'], args['file_name'], args['file'], args['size'])
+      fileRecieved(args['name'], args['fileName'], args['file'], args['size'])
     }
   };
-  const fileRecieved = function(name, file_name, file, size){
+  const fileRecieved = function(name, fileName, file, size){
     const p = document.createElement("p");
     const a = document.createElement("a");
     p.appendChild(a);
     messages.appendChild(p);
-    a.download = file_name;
+    a.download = fileName;
     a.href = file;
-    a.textContent = name + ": " + file_name + " (" + getDispFileSize(size) + ")" 
+    a.textContent = name + ": " + fileName + " (" + getDispFileSize(size) + ")" 
   }
   const outputMessage = function(message){
     const p = document.createElement("p");
@@ -547,7 +547,7 @@ if(section != undefined){
   audioOutputSelect.onchange = changeAudioDestination;
   peer.once('open', id => {
     localId.textContent = id
-    result = connect_last_connection();
+    result = connectLastConnection();
     if(!result && guestId){
         call(guestId);  
     }
@@ -556,24 +556,24 @@ if(section != undefined){
 
 function getParams(params){
   const regex = /[?&]([^=#]+)=([^&#]*)/g;
-  const params_obj = {};
+  const paramsObj = {};
   let match;
   while(match = regex.exec(params)){
-    params_obj[match[1]] = match[2];
+    paramsObj[match[1]] = match[2];
   }
-  return params_obj;
+  return paramsObj;
 }
 
 function getDispFileSize(byte){
-  mb_size = (byte / 1024 / 1024).toFixed(1) 
-  if(mb_size == "0.0") {
-    kb_size = (byte / 1024).toFixed(1) 
-    if(kb_size == "0.0") {
+  mbSize = (byte / 1024 / 1024).toFixed(1) 
+  if(mbSize == "0.0") {
+    kbSize = (byte / 1024).toFixed(1) 
+    if(kbSize == "0.0") {
       return byte + " Byte"
     }else{
-      return kb_size + " KB"
+      return kbSize + " KB"
     }
   }else{
-    return mb_size + " MB"
+    return mbSize + " MB"
   }
 }
