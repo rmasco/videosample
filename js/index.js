@@ -37,7 +37,8 @@ if(section != undefined){
 
   // ID
   const peerID = userId;
-  const tempConferenceId = null
+  // 接続中のconnectionのID
+  var connectionId = null
   
   // ボタンを通話中の活性状態にする
   const changeActiveStateWhileTalking = function() {
@@ -236,6 +237,7 @@ if(section != undefined){
       remoteVideo.srcObject = stream;
       remoteVideo.playsInline = true;
       await remoteVideo.play().catch(console.error);
+      connectionId = mediaConnection._options.connectionId;
       timer = setTimeout(function(){
         update_limit_time();
       }, 1000);
@@ -303,6 +305,7 @@ if(section != undefined){
       mediaConnection.close(true)
       return
     }
+    connectionId = mediaConnection._options.connectionId;
     audioInputSelect.onchange = function(){ 
       changeDevices(mediaConnection);      
     }
@@ -322,10 +325,12 @@ if(section != undefined){
     closeTrigger.addEventListener('click', closeMediaObj);
 
     mediaConnection.once('close', () => {
-      remoteVideo.srcObject.getTracks().forEach(track => track.stop());
-      remoteVideo.srcObject = null;
-      clearTimeout(timer);
-      closeTrigger.removeEventListener('click', closeMediaObj);
+      if(connectionId == mediaConnection._options.connectionId){
+        remoteVideo.srcObject.getTracks().forEach(track => track.stop());
+        remoteVideo.srcObject = null;
+        clearTimeout(timer);
+        closeTrigger.removeEventListener('click', closeMediaObj);
+      }
     });
   });
 
@@ -469,20 +474,11 @@ if(section != undefined){
     localStream = await navigator.mediaDevices
                                   .getUserMedia(constraints)
                                   .catch(console.error);
-    // Render local stream
     localVideo.muted = true;
     localVideo.srcObject = localStream;
     localVideo.playsInline = true;
     await localVideo.play().catch(console.error);
     mediaConnection.replaceStream(localStream);
-  }
-  function stopStreamedVideo(videoElem) {
-    let stream = videoElem.srcObject;
-    let tracks = stream.getTracks();
-    tracks.forEach(function(track) {
-        track.stop();
-    });
-    videoElem.srcObject = null;
   }
 
   // 初期処理
