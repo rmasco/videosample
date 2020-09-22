@@ -1,5 +1,6 @@
 const Peer = window.Peer;
 const LIMIT_SEND_FILE_SIZE_MB = 1
+const ERROR_MESSAGE_UNEXCEPTED_ERROR = "予期せぬエラーが発生しました。"
 
 //パラメータを取得
 dictParams = getParams(location.href)
@@ -73,18 +74,44 @@ if(section != undefined){
     const talk_obj = JSON.parse(talk_json);
     // 制限時刻を過ぎているかチェック
     if(Math.floor((new Date(talk_obj.limit_date).getTime() - new Date().getTime()) / (1000)) > 0){
-      // 接続時間内の場合は再接続するかどうか
-      if(window.confirm("再接続しますか？ ID: " + talk_obj.remote_id)){
+      // 接続時間内の場合は再接続するかどうか確認する
+      var divMessage = document.getElementById('modal_reconnect_title');
+      divMessage.innerText = "再接続しますか？ ID: " + talk_obj.remote_id
+      var divButton = document.getElementById('modal_recconect_button_div');
+      divButton.innerHTML = ""
+      // はい
+      const modalButtonYes = document.createElement("button");
+      modalButtonYes.classList.add('btn','btn-danger');
+      modalButtonYes.id = "modal_recconect_yes"
+      modalButtonYes.innerText = "はい"
+      divButton.appendChild(modalButtonYes)
+      modalButtonYes.addEventListener('click', function() {
         // limitを再接続前のものに変更
         limit_date = new Date(talk_obj.limit_date);
         limit_time = limit_date.getTime();
         lasttime.textContent = '再接続待ち...';
-        call(talk_obj.remote_id)
-        guestId = talk_obj.remote_id
+        call(talk_obj.remote_id);
+        guestId = talk_obj.remote_id;
+        // モーダルダイアログを隠す
+        $('body').removeClass('modal-open'); 
+        $('.modal-backdrop').remove();
+        $('#modal_reconnect').modal('hide');
         return true;
-      }else {
+      });
+      // いいえ
+      const modalButtonNo = document.createElement("button");
+      modalButtonNo.classList.add('btn','btn-default');
+      modalButtonNo.id = "modal_recconect_no"
+      modalButtonNo.innerText = "いいえ"
+      divButton.appendChild(modalButtonNo)
+      modalButtonNo.addEventListener('click', function() {
+        // モーダルダイアログを隠す
+        $('body').removeClass('modal-open'); 
+        $('.modal-backdrop').remove();
+        $('#modal_reconnect').modal('hide');
         return false;
-      }
+      });
+      $('#modal_reconnect').modal();      
     } else {
       // 接続時間切れの場合クリア
       localStorage.removeItem('talk');
@@ -170,8 +197,7 @@ if(section != undefined){
         }
       })
     } catch (error) {
-      // Todo メッセージ外だし
-      window.confirm("予期せぬエラーが発生しました。")
+      window.confirm(ERROR_MESSAGE)
     }
   });
   isAudioMute = false
@@ -191,8 +217,7 @@ if(section != undefined){
         }
       })
     } catch (error) {
-      // Todo メッセージ外だし
-      window.confirm("予期せぬエラーが発生しました。")
+      window.confirm(ERROR_MESSAGE_UNEXCEPTED_ERROR)
     }
   });
 
@@ -300,28 +325,26 @@ if(section != undefined){
   // Register callee handler
   peer.on('call', mediaConnection => {
     // 受信を後勝ちにするため、受信毎にボタンを削除→生成
-    var button_div = document.getElementById('modal_button_div');
-    button_div.innerHTML = ""
+    var divButton = document.getElementById('modal_button_div');
+    divButton.innerHTML = ""
     // はい
     const modalButtonYes = document.createElement("button");
     modalButtonYes.classList.add('btn','btn-danger');
     modalButtonYes.id = "modal_yes"
     modalButtonYes.innerText = "はい"
-    button_div.appendChild(modalButtonYes)
-    var onClickCallRecievedObj = {handleEvent: function() {
+    divButton.appendChild(modalButtonYes);
+    modalButtonYes.addEventListener('click', function() {
       onClickCallRecieved(mediaConnection);
-    }}
-    modalButtonYes.addEventListener('click', onClickCallRecievedObj);
+    });
     // いいえ
     const modalButtonNo = document.createElement("button");
     modalButtonNo.classList.add('btn','btn-default');
     modalButtonNo.id = "modal_no"
     modalButtonNo.innerText = "いいえ"
-    button_div.appendChild(modalButtonNo)
-    var onClickCallRefusedObj = {handleEvent: function() {
+    divButton.appendChild(modalButtonNo);
+    modalButtonNo.addEventListener('click', function() {
       onClickCallRefused(mediaConnection);
-    }}
-    modalButtonNo.addEventListener('click', onClickCallRefusedObj);
+    });
 
     $('#modal_response').modal();
   });
