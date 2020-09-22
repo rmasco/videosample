@@ -299,12 +299,35 @@ if(section != undefined){
   // ビデオ受信処理
   // Register callee handler
   peer.on('call', mediaConnection => {
-    if(window.confirm("応答しますか？")){
-      mediaConnection.answer(localStream);
-    } else {
-      mediaConnection.close(true)
-      return
-    }
+    // 受信を後勝ちにするため、受信毎にボタンを削除→生成
+    var button_div = document.getElementById('modal_button_div');
+    button_div.innerHTML = ""
+    // はい
+    const modalButtonYes = document.createElement("button");
+    modalButtonYes.classList.add('btn','btn-danger');
+    modalButtonYes.id = "modal_yes"
+    modalButtonYes.innerText = "はい"
+    button_div.appendChild(modalButtonYes)
+    var onClickCallRecievedObj = {handleEvent: function() {
+      onClickCallRecieved(mediaConnection);
+    }}
+    modalButtonYes.addEventListener('click', onClickCallRecievedObj);
+    // いいえ
+    const modalButtonNo = document.createElement("button");
+    modalButtonNo.classList.add('btn','btn-default');
+    modalButtonNo.id = "modal_no"
+    modalButtonNo.innerText = "いいえ"
+    button_div.appendChild(modalButtonNo)
+    var onClickCallRefusedObj = {handleEvent: function() {
+      onClickCallRefused(mediaConnection);
+    }}
+    modalButtonNo.addEventListener('click', onClickCallRefusedObj);
+
+    $('#modal_response').modal();
+  });
+
+  const onClickCallRecieved = function(mediaConnection) {
+    mediaConnection.answer(localStream);
     connectionId = mediaConnection._options.connectionId;
     audioInputSelect.onchange = function(){ 
       changeDevices(mediaConnection);      
@@ -332,7 +355,16 @@ if(section != undefined){
         closeTrigger.removeEventListener('click', closeMediaObj);
       }
     });
-  });
+    $('body').removeClass('modal-open'); 
+    $('.modal-backdrop').remove();
+    $('#modal_response').modal('hide');
+  };
+  const onClickCallRefused = function(mediaConnection) {
+    mediaConnection.close(true)
+    $('body').removeClass('modal-open'); 
+    $('.modal-backdrop').remove();
+    $('#modal_response').modal('hide');
+  };
 
   // データ接続受信処理
   // Register connected peer handler
