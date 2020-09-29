@@ -122,7 +122,7 @@
         audio: {deviceId: audioSource ? {exact: audioSource} : undefined},
         video: {deviceId: videoSource ? {exact: videoSource} : undefined}
       };
-
+      localStream.getTracks().forEach(track => track.stop());
       localStream = await navigator.mediaDevices
                                     .getUserMedia(constraints)
                                     .catch(console.error);
