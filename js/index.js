@@ -74,59 +74,61 @@ try {
     // 再接続を行った場合は、true
     // 再接続を行わなかった場合は、false
     const connectLastConnection = function(){
-      // ローカルストレージから一時データ取得
-      // 形式: limitDate
-      //      remoteId
-      const talkJson = localStorage.getItem('talk');
-      // 一時データがなければ終了
-      if(!talkJson) return false
-      // 一時データをパース
-      const talkObj = JSON.parse(talkJson);
-      // 制限時刻を過ぎているかチェック
-      if(Math.floor((new Date(talkObj.limitDate).getTime() - new Date().getTime()) / (1000)) > 0){
-        // 接続時間内の場合は再接続するかどうか確認する
-        var divMessage = document.getElementById('modal_reconnect_title');
-        divMessage.innerText = "再接続しますか？ ID: " + talkObj.remoteId
-        var divButton = document.getElementById('modal_recconect_button_div');
-        divButton.innerHTML = ""
-        // はい
-        const modalButtonYes = document.createElement("button");
-        modalButtonYes.classList.add('btn','btn-danger');
-        modalButtonYes.id = "modal_recconect_yes"
-        modalButtonYes.innerText = "はい"
-        divButton.appendChild(modalButtonYes)
-        modalButtonYes.addEventListener('click', function() {
-          // limitを再接続前のものに変更
-          limitDate = new Date(talkObj.limitDate);
-          limitTime = limitDate.getTime();
-          lasttime.textContent = '再接続待ち...';
-          call(talkObj.remoteId);
-          guestId = talkObj.remoteId;
-          // モーダルダイアログを隠す
-          $('body').removeClass('modal-open'); 
-          $('.modal-backdrop').remove();
-          $('#modal_reconnect').modal('hide');
-          return true;
-        });
-        // いいえ
-        const modalButtonNo = document.createElement("button");
-        modalButtonNo.classList.add('btn','btn-default');
-        modalButtonNo.id = "modal_recconect_no"
-        modalButtonNo.innerText = "いいえ"
-        divButton.appendChild(modalButtonNo)
-        modalButtonNo.addEventListener('click', function() {
-          // モーダルダイアログを隠す
-          $('body').removeClass('modal-open'); 
-          $('.modal-backdrop').remove();
-          $('#modal_reconnect').modal('hide');
-          return false;
-        });
-        $('#modal_reconnect').modal();      
-      } else {
-        // 接続時間切れの場合クリア
-        localStorage.removeItem('talk');
-        return false;
-      }
+      return new Promise((resolve, reject) => {
+        // ローカルストレージから一時データ取得
+        // 形式: limitDate
+        //      remoteId
+        const talkJson = localStorage.getItem('talk');
+        // 一時データがなければ終了
+        if(!talkJson) return resolve(false);
+        // 一時データをパース
+        const talkObj = JSON.parse(talkJson);
+        // 制限時刻を過ぎているかチェック
+        if(Math.floor((new Date(talkObj.limitDate).getTime() - new Date().getTime()) / (1000)) > 0){
+          // 接続時間内の場合は再接続するかどうか確認する
+          var divMessage = document.getElementById('modal_reconnect_title');
+          divMessage.innerText = "再接続しますか？ ID: " + talkObj.remoteId
+          var divButton = document.getElementById('modal_recconect_button_div');
+          divButton.innerHTML = ""
+          // はい
+          const modalButtonYes = document.createElement("button");
+          modalButtonYes.classList.add('btn','btn-danger');
+          modalButtonYes.id = "modal_recconect_yes"
+          modalButtonYes.innerText = "はい"
+          divButton.appendChild(modalButtonYes)
+          modalButtonYes.addEventListener('click', function() {
+            // limitを再接続前のものに変更
+            limitDate = new Date(talkObj.limitDate);
+            limitTime = limitDate.getTime();
+            lasttime.textContent = '再接続待ち...';
+            call(talkObj.remoteId);
+            guestId = talkObj.remoteId;
+            // モーダルダイアログを隠す
+            $('body').removeClass('modal-open'); 
+            $('.modal-backdrop').remove();
+            $('#modal_reconnect').modal('hide');
+            return resolve(true);
+          });
+          // いいえ
+          const modalButtonNo = document.createElement("button");
+          modalButtonNo.classList.add('btn','btn-default');
+          modalButtonNo.id = "modal_recconect_no"
+          modalButtonNo.innerText = "いいえ"
+          divButton.appendChild(modalButtonNo)
+          modalButtonNo.addEventListener('click', function() {
+            // モーダルダイアログを隠す
+            $('body').removeClass('modal-open'); 
+            $('.modal-backdrop').remove();
+            $('#modal_reconnect').modal('hide');
+            return resolve(false);
+          });
+          $('#modal_reconnect').modal();      
+        } else {
+          // 接続時間切れの場合クリア
+          localStorage.removeItem('talk');
+          return resolve(false);
+        }
+      });
     }
 
     // 制限時間を更新して、時間切れであれば終了する
@@ -549,10 +551,13 @@ try {
     videoSelect.onchange = changeDevices;
     peer.once('open', id => {
       localId.textContent = id
-      result = connectLastConnection();
-      if(!result && guestId){
+      connectLastConnection().then(result=>{
+        if(!result && guestId){
           call(guestId);  
-      }
+        }
+      }).catch(error => {
+        //
+      });
     });
   })();
 
