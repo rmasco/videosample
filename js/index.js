@@ -46,9 +46,7 @@ try {
     // ID
     const peerID = userId;
     var localMediaConnection = null
-    // 接続中のconnectionのID
-    //var connectionId = null
-    
+    var connectionId = null    
     // ボタンを通話中の活性状態にする
     const changeActiveStateWhileTalking = function() {
       closeTrigger.removeAttribute("disabled");
@@ -269,7 +267,7 @@ try {
         remoteVideo.srcObject = stream;
         remoteVideo.playsInline = true;
         await remoteVideo.play().catch(console.error);
-        //connectionId = mediaConnection._options.connectionId;
+        connectionId = mediaConnection.id;
         timer = setTimeout(function(){
           updateLimitTime();
         }, 1000);
@@ -321,9 +319,11 @@ try {
       });
 
       mediaConnection.once('close', () => {
-        remoteVideo.srcObject.getTracks().forEach(track => track.stop());
-        remoteVideo.srcObject = null;
-        clearTimeout(timer);
+        if(connectionId == mediaConnection.id){
+          remoteVideo.srcObject.getTracks().forEach(track => track.stop());
+          remoteVideo.srcObject = null;
+          clearTimeout(timer);
+        }
       });
     }
 
@@ -359,7 +359,7 @@ try {
     const onClickCallRecieved = function(mediaConnection) {
       mediaConnection.answer(localStream);
       localMediaConnection = mediaConnection
-      //connectionId = mediaConnection._options.connectionId;
+      connectionId = mediaConnection.id;
       mediaConnection.on('stream', async stream => {
         // Render remote stream for callee
         remoteVideo.srcObject = stream;
@@ -373,7 +373,7 @@ try {
       closeTrigger.addEventListener('click', closeMediaObj);
 
       mediaConnection.once('close', () => {
-        if(localMediaConnection._options.connectionId == mediaConnection._options.connectionId){
+        if(connectionId == mediaConnection.id){
           remoteVideo.srcObject.getTracks().forEach(track => track.stop());
           remoteVideo.srcObject = null;
           clearTimeout(timer);
