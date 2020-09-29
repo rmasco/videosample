@@ -46,7 +46,8 @@ try {
     // ID
     const peerID = userId;
     var localMediaConnection = null
-    var connectionId = null    
+    var mediaConnectionId = null 
+    var dataConnectionId = null 
     // ボタンを通話中の活性状態にする
     const changeActiveStateWhileTalking = function() {
       closeTrigger.removeAttribute("disabled");
@@ -267,7 +268,7 @@ try {
         remoteVideo.srcObject = stream;
         remoteVideo.playsInline = true;
         await remoteVideo.play().catch(console.error);
-        connectionId = mediaConnection.id;
+        mediaConnectionId = mediaConnection.id;
         timer = setTimeout(function(){
           updateLimitTime();
         }, 1000);
@@ -293,7 +294,7 @@ try {
         dataConnection.once('open', async () => {
           //messages.textContent += `=== DataConnection has been opened ===\n`;
           outputMessage(`=== DataConnection has been opened ===`);
-
+          dataConnectionId = dataConnection.id;
           sendTrigger.addEventListener('click', sendObj)
           fileSendTrigger.addEventListener('change', fileSendObj)
           closeTrigger.addEventListener('click', closeObj)
@@ -308,18 +309,18 @@ try {
     
         dataConnection.on('data', recieve);
         dataConnection.once('close', () => {
-          //messages.textContent += `=== DataConnection has been closed ===\n`;
-          outputMessage(`=== DataConnection has been closed ===\n`);
-
-          sendTrigger.removeEventListener('click', sendObj);
-          fileSendTrigger.removeEventListener('change', fileSendObj);
-          closeTrigger.removeEventListener('click', closeObj);
-          changeActiveStateWhileNotTalking()
+          if(dataConnectionId == dataConnection.id){
+            outputMessage(`=== DataConnection has been closed ===\n`);
+            sendTrigger.removeEventListener('click', sendObj);
+            fileSendTrigger.removeEventListener('change', fileSendObj);
+            closeTrigger.removeEventListener('click', closeObj);
+            changeActiveStateWhileNotTalking()
+          }
         });
       });
 
       mediaConnection.once('close', () => {
-        if(connectionId == mediaConnection.id){
+        if(mediaConnectionId == mediaConnection.id){
           remoteVideo.srcObject.getTracks().forEach(track => track.stop());
           remoteVideo.srcObject = null;
           clearTimeout(timer);
@@ -359,7 +360,7 @@ try {
     const onClickCallRecieved = function(mediaConnection) {
       mediaConnection.answer(localStream);
       localMediaConnection = mediaConnection
-      connectionId = mediaConnection.id;
+      mediaConnectionId = mediaConnection.id;
       mediaConnection.on('stream', async stream => {
         // Render remote stream for callee
         remoteVideo.srcObject = stream;
@@ -373,7 +374,7 @@ try {
       closeTrigger.addEventListener('click', closeMediaObj);
 
       mediaConnection.once('close', () => {
-        if(connectionId == mediaConnection.id){
+        if(mediaConnectionId == mediaConnection.id){
           remoteVideo.srcObject.getTracks().forEach(track => track.stop());
           remoteVideo.srcObject = null;
           clearTimeout(timer);
@@ -394,6 +395,7 @@ try {
     // データ接続受信処理
     // Register connected peer handler
     peer.on('connection', dataConnection => {
+      dataConnectionId = dataConnection.id;
       var sendObj = {handleEvent: function() {
         onClickSend(dataConnection)
       }}
@@ -413,13 +415,14 @@ try {
       });
       dataConnection.on('data', recieve);
       dataConnection.once('close', () => {
-        //messages.textContent += `=== DataConnection has been closed ===\n`;
-        outputMessage(`=== DataConnection has been closed ===`);
-        sendTrigger.removeEventListener('click', sendObj)
-        fileSendTrigger.removeEventListener('change', fileSendObj)
-        closeTrigger.removeEventListener('click', closeDataObj)
-        changeActiveStateWhileNotTalking()
-        //location.reload()
+        if(dataConnectionId == dataConnection.id){
+          outputMessage(`=== DataConnection has been closed ===`);
+          sendTrigger.removeEventListener('click', sendObj)
+          fileSendTrigger.removeEventListener('change', fileSendObj)
+          closeTrigger.removeEventListener('click', closeDataObj)
+          changeActiveStateWhileNotTalking()
+          //location.reload()
+        }
       });
     });
     const recieve = function(args) {
@@ -527,6 +530,7 @@ try {
         audio: {deviceId: audioSource ? {exact: audioSource} : undefined},
         video: {deviceId: videoSource ? {exact: videoSource} : undefined}
       };
+      localStream.getTracks().forEach(track => track.stop());
       localStream = await navigator.mediaDevices
                                     .getUserMedia(constraints)
                                     .catch(console.error);
