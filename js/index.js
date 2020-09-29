@@ -14,11 +14,9 @@ try {
   var guestId = dictParams['g']   // ゲストID
   var section = dictParams['s']   // セクションID (e.g. 202009081210)  
   if(section != undefined){
-    var limitDate = new Date(parseInt(section.substring(0, 4)), parseInt(section.substring(4, 6)) - 1, parseInt(section.substring(6, 8)), parseInt(section.substring(8, 10)), parseInt(section.substring(10, 12)));
-    if(limitDate.toString()==="Invalid Date"){
+    if(convertSectionToLimitDate(section).toString()==="Invalid Date"){
       throw new Error(ERROR_MESSAGE_SECTION);
     }
-    var limitTime = limitDate.getTime();
   }
 
   (async function main() {
@@ -76,7 +74,7 @@ try {
     const connectLastConnection = function(){
       return new Promise((resolve, reject) => {
         // ローカルストレージから一時データ取得
-        // 形式: limitDate
+        // 形式: section
         //      remoteId
         const talkJson = localStorage.getItem('talk');
         // 一時データがなければ終了
@@ -84,7 +82,9 @@ try {
         // 一時データをパース
         const talkObj = JSON.parse(talkJson);
         // 制限時刻を過ぎているかチェック
-        if(Math.floor((new Date(talkObj.limitDate).getTime() - new Date().getTime()) / (1000)) > 0){
+        var limitTime = convertSectionToLimitTime(talkObj.section);
+        var nowTime = new Date().getTime();
+        if(Math.floor((limitTime - nowTime) / 1000) > 0){
           // 接続時間内の場合は再接続するかどうか確認する
           var divMessage = document.getElementById('modal_reconnect_title');
           divMessage.innerText = "再接続しますか？ ID: " + talkObj.remoteId
@@ -97,12 +97,11 @@ try {
           modalButtonYes.innerText = "はい"
           divButton.appendChild(modalButtonYes)
           modalButtonYes.addEventListener('click', function() {
-            // limitを再接続前のものに変更
-            limitDate = new Date(talkObj.limitDate);
-            limitTime = limitDate.getTime();
+            // sectionを再接続前のものに変更
+            section = talkObj.section
+            guestId = talkObj.remoteId;
             lasttime.textContent = '再接続待ち...';
             call(talkObj.remoteId);
-            guestId = talkObj.remoteId;
             // モーダルダイアログを隠す
             $('body').removeClass('modal-open'); 
             $('.modal-backdrop').remove();
@@ -137,6 +136,7 @@ try {
       const nowDate = new Date();
       console.log(nowDate);
       const nowTimestamp = nowDate.getTime();
+      var limitTime = convertSectionToLimitTime(section)
       console.log(limitTime);
       console.log(nowTimestamp);
       console.log(limitTime - nowTimestamp);
@@ -276,7 +276,7 @@ try {
         
         let json = JSON.stringify({
           'remoteId': remoteId,
-          'limitDate': limitDate
+          'section': section
         });
         localStorage.setItem('talk', json);
 
@@ -431,11 +431,9 @@ try {
         // かけ直す際に使用 
         guestId = args['remoteId']
         section = args['section']
-        limitDate = new Date(parseInt(section.substring(0, 4)), parseInt(section.substring(4, 6)) - 1, parseInt(section.substring(6, 8)), parseInt(section.substring(8, 10)), parseInt(section.substring(10, 12)));
-        limitTime = limitDate.getTime();
         let json = JSON.stringify({
           'remoteId': args['remoteId'],
-          'limitDate': limitDate
+          'section': section
         });
         localStorage.setItem('talk', json);
         // 通話を受け取った際に制限時間を設定
@@ -587,4 +585,13 @@ function getDispFileSize(byte){
   }else{
     return mbSize + " MB"
   }
+}
+
+function convertSectionToLimitDate(section){
+  return new Date(parseInt(section.substring(0, 4)), parseInt(section.substring(4, 6)) - 1, parseInt(section.substring(6, 8)), parseInt(section.substring(8, 10)), parseInt(section.substring(10, 12)))
+}
+
+function convertSectionToLimitTime(section){
+  var limitDate = convertSectionToLimitDate(section);
+  return limitDate.getTime();
 }
