@@ -4,7 +4,6 @@ try {
   const ERROR_MESSAGE_UNEXCEPTED_ERROR = "予期せぬエラーが発生しました。"
   const ERROR_MESSAGE_USE_ID= "ユーザーIDを指定してください。"
   const ERROR_MESSAGE_SECTION= "正しい日付を指定してください。"
-  
 
   //パラメータを取得
   dictParams = getParams(location.href)
@@ -48,8 +47,9 @@ try {
 
     // ID
     const peerID = userId;
+    var localMediaConnection = null
     // 接続中のconnectionのID
-    var connectionId = null
+    //var connectionId = null
     
     // ボタンを通話中の活性状態にする
     const changeActiveStateWhileTalking = function() {
@@ -261,18 +261,13 @@ try {
         return;
       }
       const mediaConnection = peer.call(remoteId, localStream);
-      audioInputSelect.onchange = function(){ 
-        changeDevices(mediaConnection);      
-      }
-      videoSelect.onchange = function(){ 
-        changeDevices(mediaConnection);      
-      }
+      localMediaConnection = mediaConnection
       mediaConnection.on('stream', async stream => {
         // Render remote stream for caller
         remoteVideo.srcObject = stream;
         remoteVideo.playsInline = true;
         await remoteVideo.play().catch(console.error);
-        connectionId = mediaConnection._options.connectionId;
+        //connectionId = mediaConnection._options.connectionId;
         timer = setTimeout(function(){
           updateLimitTime();
         }, 1000);
@@ -361,13 +356,8 @@ try {
 
     const onClickCallRecieved = function(mediaConnection) {
       mediaConnection.answer(localStream);
-      connectionId = mediaConnection._options.connectionId;
-      audioInputSelect.onchange = function(){ 
-        changeDevices(mediaConnection);      
-      }
-      videoSelect.onchange = function(){ 
-        changeDevices(mediaConnection);      
-      }
+      localMediaConnection = mediaConnection
+      //connectionId = mediaConnection._options.connectionId;
       mediaConnection.on('stream', async stream => {
         // Render remote stream for callee
         remoteVideo.srcObject = stream;
@@ -381,7 +371,7 @@ try {
       closeTrigger.addEventListener('click', closeMediaObj);
 
       mediaConnection.once('close', () => {
-        if(connectionId == mediaConnection._options.connectionId){
+        if(localMediaConnection._options.connectionId == mediaConnection._options.connectionId){
           remoteVideo.srcObject.getTracks().forEach(track => track.stop());
           remoteVideo.srcObject = null;
           clearTimeout(timer);
@@ -530,7 +520,7 @@ try {
         });
     }
 
-    const changeDevices = async function(mediaConnection){
+    const changeDevices = async function(){
       const audioSource = audioInputSelect.value;
       const videoSource = videoSelect.value;
       const constraints = {
@@ -544,8 +534,8 @@ try {
       localVideo.srcObject = localStream;
       localVideo.playsInline = true;
       await localVideo.play().catch(console.error);
-      if(mediaConnection.remoteStream != undefined && mediaConnection.remoteStream.active){
-        mediaConnection.replaceStream(localStream);
+      if(localMediaConnection != null && localMediaConnection.remoteStream != undefined && localMediaConnection.remoteStream.active){
+        localMediaConnection.replaceStream(localStream);
       }
     }
 
@@ -555,6 +545,8 @@ try {
     changeActiveStateWhileNotTalking()
     getDevices()
     audioOutputSelect.onchange = changeAudioDestination;
+    audioInputSelect.onchange = changeDevices;
+    videoSelect.onchange = changeDevices;
     peer.once('open', id => {
       localId.textContent = id
       result = connectLastConnection();
