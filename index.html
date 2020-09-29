@@ -35,10 +35,10 @@
       <div class="col-8">
         <div class="row">
           <div class="col">
-            <video id="js-local-stream"></video>
+            <video id="js-local-stream" style="-webkit-transform: scaleX(-1);" ></video>
           </div>
           <div class="col">
-            <video id="js-remote-stream"></video>
+            <video id="js-remote-stream" ></video>
           </div>
         </div>
       </div>
@@ -63,13 +63,13 @@
     <p class="meta" id="js-meta"></p>
     <p>Your ID: <span id="js-local-id"></span></p>
     <div class="select">
-      <label for="audioSource">Audio input source: </label><select id="audioSource"></select>
+      <label for="audioSource">マイク</label><select id="audioSource"></select>
     </div>
     <div class="select">
-        <label for="audioOutput">Audio output destination: </label><select id="audioOutput"></select>
+        <label for="audioOutput">スピーカー/label><select id="audioOutput"></select>
     </div>
     <div class="select">
-        <label for="videoSource">Video source: </label><select id="videoSource"></select>
+        <label for="videoSource">カメラ</label><select id="videoSource"></select>
     </div>
   </div>
 
