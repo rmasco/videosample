@@ -4,6 +4,7 @@ try {
   const ERROR_MESSAGE_UNEXCEPTED_ERROR = "予期せぬエラーが発生しました。"
   const ERROR_MESSAGE_USE_ID= "ユーザーIDを指定してください。"
   const ERROR_MESSAGE_SECTION= "正しい日付を指定してください。"
+  const ERROR_MESSAGE_UNAVAILABLE_ID= "ビデオの起動に失敗しました。現在開いているビデオ画面を全て閉じてから再度お試しください。"
 
   //パラメータを取得
   dictParams = getParams(location.href)
@@ -253,7 +254,13 @@ try {
     const peer = (window.peer = new Peer(peerID, {
       key: '976b1d6d-589e-48f6-8a9c-8f67e8062a7c',
       debug: 3,
-    }));
+    }));    
+    peer.on("error", (error) => {
+      if(error.type == "unavailable-id"){
+        window.alert(ERROR_MESSAGE_UNAVAILABLE_ID);
+        return;
+      }
+    });
 
     function call (remoteId){
       // Note that you need to ensure the peer has connected to signaling server
