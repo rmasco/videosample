@@ -3,10 +3,11 @@ try {
   const API_KEY = "976b1d6d-589e-48f6-8a9c-8f67e8062a7c"
   const LIMIT_SEND_FILE_SIZE_MB = 1
   const ERROR_MESSAGE_UNEXCEPTED_ERROR = "予期せぬエラーが発生しました。"
-  const ERROR_MESSAGE_USE_ID= "ユーザーIDを指定してください。"
-  const ERROR_MESSAGE_USER_TOKEN= "ユーザーTokenを指定してください。"
-  const ERROR_MESSAGE_SECTION= "正しい日付を指定してください。"
-  const ERROR_MESSAGE_UNAVAILABLE_ID= "ビデオの起動に失敗しました。現在開いているビデオ画面を全て閉じてから再度お試しください。"
+  const ERROR_MESSAGE_USE_ID = "ユーザーIDを指定してください。"
+  const ERROR_MESSAGE_USER_TOKEN = "ユーザーTokenを指定してください。"
+  const ERROR_MESSAGE_SECTION = "正しい日付を指定してください。"
+  const ERROR_MESSAGE_UNAVAILABLE_ID = "ビデオの起動に失敗しました。現在開いているビデオ画面を全て閉じてから再度お試しください。"
+  const ERROR_MESSAGE_CHANGE_DEBICE = "デバイスの変更に失敗しました。画面を更新して再接続してください。"
 
   //パラメータを取得
   dictParams = getParams(location.href)
@@ -530,6 +531,8 @@ try {
           })
           .catch(function(err) {
             console.error('setSinkId Err:', err);
+            window.alert(ERROR_MESSAGE_CHANGE_DEBICE);
+            return;
           });
       }
 
@@ -543,7 +546,11 @@ try {
         localStream.getTracks().forEach(track => track.stop());
         localStream = await navigator.mediaDevices
                                       .getUserMedia(constraints)
-                                      .catch(console.error);
+                                      .catch(function(){
+                                        console.error;
+                                        window.alert(ERROR_MESSAGE_CHANGE_DEBICE);
+                                        return;
+                                      });
         localVideo.muted = true;
         localVideo.srcObject = localStream;
         localVideo.playsInline = true;
