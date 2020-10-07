@@ -84,20 +84,14 @@ try {
       // ボタンを通話中の活性状態にする
       const changeActiveStateWhileTalking = function() {
         closeTrigger.removeAttribute("disabled");
-        closeTrigger.style.color = "white";
         sendTrigger.removeAttribute("disabled");
-        sendTrigger.style.color = "white";
         fileSendTrigger.removeAttribute("disabled");
-        fileSendTrigger.style.color = "white";
       };
       // ボタンを非通話中の活性状態にする
       const changeActiveStateWhileNotTalking = function() {
         closeTrigger.setAttribute("disabled", true);
-        closeTrigger.style.color = "gray";
         sendTrigger.setAttribute("disabled", true);
-        sendTrigger.style.color = "gray";
         fileSendTrigger.setAttribute("disabled", true);
-        fileSendTrigger.style.color = "gray";
       };
 
       // 再接続処理
@@ -233,10 +227,10 @@ try {
             if(track.kind == "video") {
               if(isVideoMute){
                 track.enabled = false
-                videoMuteTrigger.innerText = "video mute 解除";
+                videoMuteTrigger.innerHTML = '<i class="fas fa-video"></i>';
               }else {
                 track.enabled = true
-                videoMuteTrigger.innerText = "video mute";
+                videoMuteTrigger.innerHTML = '<i class="fas fa-video-slash"></i>';
               }      
             }
           })
@@ -253,11 +247,11 @@ try {
             if(track.kind == "audio") {
               if(isAudioMute){
                 track.enabled = false
-                audioMuteTrigger.innerText = "audio mute 解除";
+                audioMuteTrigger.innerHTML = '<i class="fas fa-volume-up"></i>';
               }else {
                 track.enabled = true
-                audioMuteTrigger.innerText = "audio mute";
-              }      
+                audioMuteTrigger.innerHTML = '<i class="fas fa-volume-mute"></i>';
+                }      
             }
           })
         } catch (error) {

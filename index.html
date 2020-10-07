@@ -5,10 +5,14 @@
   display: none;
 }
 .input_file_wrapper {
-    width: 16px;
-    height: 16px;
-    background-size: 16px;
-    background-image: url('./img/img_file.png');
+    width: 32px;
+    height: 32px;
+    background-size: 32px;
+    background-image: url(./img/img_file.png);
+    background-repeat: no-repeat;
+}
+.videos video {
+  max-width: 100%;
 }
 </style>
 <head>
@@ -16,28 +20,28 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Document</title>
   <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css" integrity="sha384-JcKb8q3iqJ61gNV9KGb8thSsNjpSL0n8PARn9HuZOnIxN0hoP+VmmDGMN5t9UJ0Z" crossorigin="anonymous">
-
+  <script src="https://kit.fontawesome.com/0ca209b885.js" crossorigin="anonymous"></script>
 </head>
 <body>
   <div class="container">
-    <h1 class="heading">ビデオ通話 + チャットサンプル</h1>
+    <h1 class="heading">トーク画面サンプル</h1>
     <div class="row">
       <div class="form-group">
-        <button id="js-close-trigger" class="btn btn-secondary">Close</button>
-        <button id="js-video-mute-trigger" class="btn btn-secondary">video mute</button>
-        <button id="js-audio-mute-trigger" class="btn btn-secondary">audio mute</button>
+        <button id="js-close-trigger" class="btn btn-secondary"><i class="fas fa-phone-slash"></i></button>
+        <button id="js-video-mute-trigger" class="btn btn-secondary"><i class="fas fa-video-slash"></i></button>
+        <button id="js-audio-mute-trigger" class="btn btn-secondary"><i class="fas fa-volume-mute"></i></button>
       </div>
     </div>
     <div class="row">
       <div id="lasttime"></div>
     </div>
-    <div class="row">
-      <div class="col-8">
+    <div class="row videos">
+      <div class="col-12 col-md-8">
         <div class="row">
-          <div class="col">
+          <div class="col-12 col-md-6">
             <video id="js-local-stream" style="-webkit-transform: scaleX(-1);" ></video>
           </div>
-          <div class="col">
+          <div class="col-12 col-md-6">
             <video id="js-remote-stream" ></video>
           </div>
         </div>
@@ -47,15 +51,19 @@
           <pre class="messages" id="js-messages"></pre>
         </div>
         <div class="row">
-          <div class=" form-group">
+          <div class="input-group">
             <input type="text" id="js-local-text" class="form-control">
-          </div>
-          <div class=" form-group">
-            <button id="js-send-trigger" class="btn btn-primary">送信</button>
-            <label>
-              <div class="input_file_wrapper"></div>
-              <input type="file" class="input_file" id="js-file-send-trigger"/>  
-            </label>
+            <div class="input-group-append row">
+              <div class="col-auto">
+                <button id="js-send-trigger" class="btn btn-primary">送信</button>
+              </div>
+              <div class="col">
+                <label>
+                  <div class="input_file_wrapper"></div>
+                  <input type="file" class="input_file" id="js-file-send-trigger" disabled="true">  
+                </label>
+              </div>
+            </div>
           </div>
         </div>
       </div>
