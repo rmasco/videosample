@@ -215,6 +215,7 @@ try {
           fileRecieved("You", localFile.name, reader.result,  localFile.size)
         };
         reader.readAsDataURL(localFile)
+        fileSendTrigger.value = ""
       };
 
       // ビデオ Mute機能
