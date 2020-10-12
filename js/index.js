@@ -3,10 +3,11 @@ try {
   const API_KEY = "976b1d6d-589e-48f6-8a9c-8f67e8062a7c"
   const LIMIT_SEND_FILE_SIZE_MB = 1
   const ERROR_MESSAGE_UNEXCEPTED_ERROR = "予期せぬエラーが発生しました。"
-  const ERROR_MESSAGE_USE_ID= "ユーザーIDを指定してください。"
-  const ERROR_MESSAGE_USER_TOKEN= "ユーザーTokenを指定してください。"
-  const ERROR_MESSAGE_SECTION= "正しい日付を指定してください。"
-  const ERROR_MESSAGE_UNAVAILABLE_ID= "ビデオの起動に失敗しました。現在開いているビデオ画面を全て閉じてから再度お試しください。"
+  const ERROR_MESSAGE_USE_ID = "ユーザーIDを指定してください。"
+  const ERROR_MESSAGE_USER_TOKEN = "ユーザーTokenを指定してください。"
+  const ERROR_MESSAGE_SECTION = "正しい日付を指定してください。"
+  const ERROR_MESSAGE_UNAVAILABLE_ID = "ビデオの起動に失敗しました。現在開いているビデオ画面を全て閉じてから再度お試しください。"
+  const ERROR_MESSAGE_CHANGE_DEBICE = "デバイスの変更に失敗しました。画面を更新して再接続してください。"
 
   //パラメータを取得
   dictParams = getParams(location.href)
@@ -84,20 +85,14 @@ try {
       // ボタンを通話中の活性状態にする
       const changeActiveStateWhileTalking = function() {
         closeTrigger.removeAttribute("disabled");
-        closeTrigger.style.color = "white";
         sendTrigger.removeAttribute("disabled");
-        sendTrigger.style.color = "white";
         fileSendTrigger.removeAttribute("disabled");
-        fileSendTrigger.style.color = "white";
       };
       // ボタンを非通話中の活性状態にする
       const changeActiveStateWhileNotTalking = function() {
         closeTrigger.setAttribute("disabled", true);
-        closeTrigger.style.color = "gray";
         sendTrigger.setAttribute("disabled", true);
-        sendTrigger.style.color = "gray";
         fileSendTrigger.setAttribute("disabled", true);
-        fileSendTrigger.style.color = "gray";
       };
 
       // 再接続処理
@@ -221,6 +216,7 @@ try {
           fileRecieved("You", localFile.name, reader.result,  localFile.size)
         };
         reader.readAsDataURL(localFile)
+        fileSendTrigger.value = ""
       };
 
       // ビデオ Mute機能
@@ -233,10 +229,10 @@ try {
             if(track.kind == "video") {
               if(isVideoMute){
                 track.enabled = false
-                videoMuteTrigger.innerText = "video mute 解除";
+                videoMuteTrigger.innerHTML = '<i class="fas fa-video"></i>';
               }else {
                 track.enabled = true
-                videoMuteTrigger.innerText = "video mute";
+                videoMuteTrigger.innerHTML = '<i class="fas fa-video-slash"></i>';
               }      
             }
           })
@@ -253,11 +249,11 @@ try {
             if(track.kind == "audio") {
               if(isAudioMute){
                 track.enabled = false
-                audioMuteTrigger.innerText = "audio mute 解除";
+                audioMuteTrigger.innerHTML = '<i class="fas fa-volume-up"></i>';
               }else {
                 track.enabled = true
-                audioMuteTrigger.innerText = "audio mute";
-              }      
+                audioMuteTrigger.innerHTML = '<i class="fas fa-volume-mute"></i>';
+                }      
             }
           })
         } catch (error) {
@@ -535,6 +531,8 @@ try {
           })
           .catch(function(err) {
             console.error('setSinkId Err:', err);
+            window.alert(ERROR_MESSAGE_CHANGE_DEBICE);
+            return;
           });
       }
 
@@ -548,7 +546,11 @@ try {
         localStream.getTracks().forEach(track => track.stop());
         localStream = await navigator.mediaDevices
                                       .getUserMedia(constraints)
-                                      .catch(console.error);
+                                      .catch(function(){
+                                        console.error;
+                                        window.alert(ERROR_MESSAGE_CHANGE_DEBICE);
+                                        return;
+                                      });
         localVideo.muted = true;
         localVideo.srcObject = localStream;
         localVideo.playsInline = true;
